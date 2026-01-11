@@ -81,7 +81,20 @@ jobs:
           # Set BISON_PKGDATADIR to the correct data directory
           echo "BISON_PKGDATADIR=C:\\ProgramData\\chocolatey\\lib\\winflexbison3\\tools\\data" >> $env:GITHUB_ENV
 
-      - name: Build postgres and pgvector
+      - name: Install Rust and jq
+        if: matrix.os != 'ubuntu-latest'
+        run: |
+          rustup default stable
+      - name: Install jq (macOS)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install jq
+      - name: Install jq (Windows)
+        if: matrix.os == 'windows-2022'
+        run: |
+          choco install jq
+
+      - name: Build postgres and extensions
         if: ${{ matrix.os != 'ubuntu-latest' && ! steps.restore-postgres.outputs.cache-hit }}
         env:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
@@ -105,6 +118,13 @@ jobs:
           CIBW_ARCHS: ${{ matrix.arch }}
           CIBW_SKIP: cp314* cp38-* *-musllinux*
           CIBW_MANYLINUX: manylinux_2_39
+          CIBW_BEFORE_ALL_LINUX: |
+            yum install -y jq gcc openssl-devel
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+            source $HOME/.cargo/env
+            rustup default stable
+            make
+          CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH"
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
         run: python -m cibuildwheel --output-dir wheelhouse
       - name: Save postgres build

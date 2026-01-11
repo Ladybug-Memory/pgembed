@@ -3,7 +3,7 @@ INSTALL_PREFIX := $(shell pwd)/../src/pgserver/pginstall/
 BUILD := $(shell pwd)/pgbuild/
 
 .PHONY: all
-all: pgvector postgres
+all: pgvector postgres pgvectorscale
 
 ### postgres
 POSTGRES_VERSION := 18-stable
@@ -58,6 +58,28 @@ $(INSTALL_PREFIX)/lib/vector.so: $(PGVECTOR_DIR)/Makefile $(INSTALL_PREFIX)/bin/
 .PHONY: pgvector
 pgvector: postgres $(INSTALL_PREFIX)/lib/vector.so
 
+### pgvectorscale
+PGVECTORSCALE_TAG := main
+PGVECTORSCALE_REPO := https://github.com/timescale/pgvectorscale
+PGVECTORSCALE_DIR := pgvectorscale
+
+$(PGVECTORSCALE_DIR):
+	git clone --branch $(PGVECTORSCALE_TAG) --depth 1 $(PGVECTORSCALE_REPO) $(PGVECTORSCALE_DIR)
+
+$(INSTALL_PREFIX)/lib/vectorscale.so: $(PGVECTORSCALE_DIR) $(INSTALL_PREFIX)/bin/postgres
+	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
+		&& export PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config \
+		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
+		&& cd $(PGVECTORSCALE_DIR)/pgvectorscale \
+		&& PGRX_VERSION=$$(cargo metadata --format-version 1 | jq -r '.packages[] | select(.name == "pgrx") | .version') \
+		&& echo "Installing cargo-pgrx version $$PGRX_VERSION" \
+		&& cargo install --locked cargo-pgrx --version $$PGRX_VERSION \
+		&& cargo pgrx init --pg18 $$PG_CONFIG \
+		&& cargo pgrx install --release
+
+.PHONY: pgvectorscale
+pgvectorscale: postgres $(INSTALL_PREFIX)/lib/vectorscale.so
+
 ### other
 .PHONY: clean clean-all
 clean:
@@ -65,6 +87,7 @@ clean:
 	rm -rf $(POSTGRES_SRC)
 	rm -rf $(POSTGRES_BLD)
 	rm -rf $(PGVECTOR_DIR)
+	rm -rf $(PGVECTORSCALE_DIR)
 
 clean-all: clean
 	rm -rf *.tar.gz
