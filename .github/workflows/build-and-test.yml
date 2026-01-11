@@ -119,13 +119,16 @@ jobs:
           CIBW_SKIP: cp314* cp38-* *-musllinux*
           CIBW_MANYLINUX: manylinux_2_39
           CIBW_BEFORE_ALL: make
+          CIBW_BEFORE_ALL_MACOS: |
+            brew install jq
+            make
           CIBW_BEFORE_ALL_LINUX: |
             yum install -y jq gcc openssl-devel
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
             source $HOME/.cargo/env
             rustup default stable
             make
-          CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH"
+          CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgserver/pginstall/bin"
           CIBW_ENVIRONMENT_MACOS: PATH="$HOME/.cargo/bin:$PATH"
           CIBW_ENVIRONMENT_WINDOWS: PATH="$USERPROFILE\\.cargo\\bin;$PATH"
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
