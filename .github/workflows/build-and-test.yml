@@ -33,6 +33,11 @@ jobs:
             arch: AMD64
             deployment-target: ''
     steps:
+      - name: Configure git for LF line endings (Windows)
+        if: matrix.os == 'windows-2022'
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
         if: matrix.os != 'ubuntu-latest'
