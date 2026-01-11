@@ -6,8 +6,8 @@ BUILD := $(shell pwd)/pgbuild/
 all: pgvector postgres pgvectorscale
 
 ### postgres
-POSTGRES_VERSION := 18-stable
-POSTGRES_SRC := REL_18_STABLE
+POSTGRES_VERSION := 17-stable
+POSTGRES_SRC := REL_17_STABLE
 POSTGRES_BLD := $(POSTGRES_SRC)
 
 
@@ -79,7 +79,7 @@ $(INSTALL_PREFIX)/lib/vectorscale.so: $(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.t
 		&& PGRX_VERSION=$$(cargo metadata --format-version 1 | jq -r '.packages[] | select(.name == "pgrx") | .version') \
 		&& echo "Installing cargo-pgrx version $$PGRX_VERSION" \
 		&& cargo install --locked cargo-pgrx --version $$PGRX_VERSION \
-		&& cargo pgrx init --pg18 $$PG_CONFIG \
+		&& cargo pgrx init --pg17 $$PG_CONFIG \
 		&& cargo pgrx install --release
 
 .PHONY: pgvectorscale
