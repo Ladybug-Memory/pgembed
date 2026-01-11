@@ -33,7 +33,6 @@ include = ["pgserver*"]  # package names should match these glob patterns (["*"]
 testpaths = ["tests"]
 
 [tool.cibuildwheel]
-before-all = "make"
 test-extras = "test"
 test-command = "bash -x {project}/cibuildwheel_test.bash {project}"
 

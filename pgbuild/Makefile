@@ -59,14 +59,19 @@ $(INSTALL_PREFIX)/lib/vector.so: $(PGVECTOR_DIR)/Makefile $(INSTALL_PREFIX)/bin/
 pgvector: postgres $(INSTALL_PREFIX)/lib/vector.so
 
 ### pgvectorscale
-PGVECTORSCALE_TAG := main
-PGVECTORSCALE_REPO := https://github.com/timescale/pgvectorscale
-PGVECTORSCALE_DIR := pgvectorscale
+PGVECTORSCALE_TAG := 0.5.1
+PGVECTORSCALE_URL := https://github.com/timescale/pgvectorscale/archive/refs/tags/$(PGVECTORSCALE_TAG).tar.gz
+PGVECTORSCALE_DIR := pgvectorscale-$(PGVECTORSCALE_TAG)
 
-$(PGVECTORSCALE_DIR):
-	git clone --branch $(PGVECTORSCALE_TAG) --depth 1 $(PGVECTORSCALE_REPO) $(PGVECTORSCALE_DIR)
+$(PGVECTORSCALE_DIR).tar.gz:
+	curl -L -o $(PGVECTORSCALE_DIR).tar.gz $(PGVECTORSCALE_URL)
 
-$(INSTALL_PREFIX)/lib/vectorscale.so: $(PGVECTORSCALE_DIR) $(INSTALL_PREFIX)/bin/postgres
+$(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.toml: $(PGVECTORSCALE_DIR).tar.gz
+	mkdir -p $(PGVECTORSCALE_DIR)
+	tar xzf $(PGVECTORSCALE_DIR).tar.gz -C $(PGVECTORSCALE_DIR) --strip-components=1
+	touch $(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.toml
+
+$(INSTALL_PREFIX)/lib/vectorscale.so: $(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.toml $(INSTALL_PREFIX)/bin/postgres
 	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
 		&& export PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config \
 		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
