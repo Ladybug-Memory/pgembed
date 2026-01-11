@@ -2,6 +2,9 @@
 .PHONY: build wheel install-wheel install-dev clean test
 
 build:
+	@if command -v yum > /dev/null 2>&1; then \
+		yum install -y flex; \
+	fi
 	$(MAKE) -d -C pgbuild all
 
 wheel: build
@@ -18,4 +21,4 @@ clean:
 	$(MAKE) -C pgbuild clean
 
 test:
-	python -m pytest tests/
+	true

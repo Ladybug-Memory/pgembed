@@ -10,22 +10,26 @@ on:
   workflow_dispatch:
 jobs:
   build_wheels:
-    name: Build wheels on ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Build wheels on ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: macos-12
-            arch: x86_64
-            deployment-target: '10.9'
-          - os: macos-latest
+          - runner: macos-latest
+            os: macos-latest
             arch: arm64
             deployment-target: '11.0'
-          - os: ubuntu-latest
+          - runner: ubuntu-latest
+            os: ubuntu-latest
             arch: x86_64
             deployment-target: ''
-          - os: windows-2022
+          - runner: ubuntu-24.04-arm
+            os: ubuntu-latest
+            arch: aarch64
+            deployment-target: ''
+          - runner: windows-2022
+            os: windows-2022
             arch: AMD64
             deployment-target: ''
     steps:
@@ -33,12 +37,12 @@ jobs:
       - uses: actions/setup-python@v4
         if: matrix.os != 'ubuntu-latest'
         with:
-          python-version: '3.10'
+          python-version: '3.12'
       - uses: actions/setup-python@v4
         if: matrix.os == 'ubuntu-latest'
           # for testing due to docker env issues
         with:
-          python-version: '3.9'
+          python-version: '3.12'
       - name: Install cibuildwheel
         run: |
           python -m pip install --upgrade pip
@@ -55,6 +59,15 @@ jobs:
             src/pgserver/pginstall
           key: ${{ runner.os }}-${{ runner.arch }}-build-${{ env.cache-name }}-${{
             hashFiles('Makefile', 'pgbuild/Makefile', '.github/workflows/build-and-test.yml') }}
+      - name: Install bison (Windows)
+        if: matrix.os == 'windows-2022'
+        run: |
+          choco install winflexbison3
+          echo "C:\\ProgramData\\chocolatey\\lib\\winflexbison3\\tools" >> $env:GITHUB_PATH
+          # Create symlinks so build tools can find bison/flex
+          New-Item -ItemType SymbolicLink -Path "C:\\ProgramData\\chocolatey\\bin\\bison.exe" -Target "C:\\ProgramData\\chocolatey\\lib\\winflexbison3\\tools\\win_bison.exe"
+          New-Item -ItemType SymbolicLink -Path "C:\\ProgramData\\chocolatey\\bin\\flex.exe" -Target "C:\\ProgramData\\chocolatey\\lib\\winflexbison3\\tools\\win_flex.exe"
+
       - name: Build postgres and pgvector
         if: ${{ matrix.os != 'ubuntu-latest' && ! steps.restore-postgres.outputs.cache-hit }}
         env:
@@ -77,7 +90,8 @@ jobs:
       - name: Build wheels
         env:
           CIBW_ARCHS: ${{ matrix.arch }}
-          CIBW_SKIP: pp* cp38-* *-musllinux*
+          CIBW_SKIP: cp314* cp38-* *-musllinux*
+          CIBW_MANYLINUX: manylinux_2_39
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
         run: python -m cibuildwheel --output-dir wheelhouse
       - name: Save postgres build
@@ -92,10 +106,11 @@ jobs:
            src/pgserver/pginstall
           key: ${{ runner.os }}-${{ runner.arch }}-build-${{ env.cache-name }}-${{
             hashFiles('Makefile', 'pgbuild/Makefile', '.github/workflows/build-and-test.yml') }}
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           path: wheelhouse/*.whl
           name: python-package-distributions
+          overwrite: true
   publish-to-pypi:
     if: ${{ startsWith(github.ref, 'refs/tags/') }}
     name: Publish Python dist to PyPI

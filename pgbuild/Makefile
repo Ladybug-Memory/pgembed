@@ -6,17 +6,14 @@ BUILD := $(shell pwd)/pgbuild/
 all: pgvector postgres
 
 ### postgres
-POSTGRES_VERSION := 16.2
-POSTGRES_URL := https://ftp.postgresql.org/pub/source/v$(POSTGRES_VERSION)/postgresql-$(POSTGRES_VERSION).tar.gz
-POSTGRES_SRC := postgresql-$(POSTGRES_VERSION)
+POSTGRES_VERSION := 18-stable
+POSTGRES_SRC := REL_18_STABLE
 POSTGRES_BLD := $(POSTGRES_SRC)
 
-$(POSTGRES_SRC).tar.gz:
-	curl -L -O $(POSTGRES_URL)
 
 ## extract
-$(POSTGRES_SRC)/configure: $(POSTGRES_SRC).tar.gz
-	tar xzf $(POSTGRES_SRC).tar.gz
+$(POSTGRES_SRC)/configure:
+	git clone https://github.com/postgres/postgres -b $(POSTGRES_SRC) --single-branch $(POSTGRES_SRC)
 	touch $(POSTGRES_SRC)/configure
 
 ## configure
@@ -39,7 +36,7 @@ $(INSTALL_PREFIX)/bin/postgres: $(POSTGRES_BLD)/config.status
 postgres: $(INSTALL_PREFIX)/bin/postgres
 
 ### pgvector
-PGVECTOR_TAG := v0.6.2
+PGVECTOR_TAG := v0.8.1
 PGVECTOR_URL := https://github.com/pgvector/pgvector/archive/refs/tags/$(PGVECTOR_TAG).tar.gz
 PGVECTOR_DIR := pgvector-$(PGVECTOR_TAG)
 

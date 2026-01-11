@@ -3,7 +3,7 @@ name = "pgserver" # Required
 version = "0.1.4"  # Required
 description = "Self-contained postgres server for your python applications" # Required
 readme = "README.md" # Optional
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 license = {file = "LICENSE.txt"}
 urls={repository="https://github.com/orm011/pgserver"}
 authors=[{ name="Oscar Moll", email="orm@csail.mit.edu" }]
