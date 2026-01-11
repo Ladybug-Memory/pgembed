@@ -67,6 +67,8 @@ jobs:
           # Create symlinks so build tools can find bison/flex
           New-Item -ItemType SymbolicLink -Path "C:\\ProgramData\\chocolatey\\bin\\bison.exe" -Target "C:\\ProgramData\\chocolatey\\lib\\winflexbison3\\tools\\win_bison.exe"
           New-Item -ItemType SymbolicLink -Path "C:\\ProgramData\\chocolatey\\bin\\flex.exe" -Target "C:\\ProgramData\\chocolatey\\lib\\winflexbison3\\tools\\win_flex.exe"
+          # Set BISON_PKGDATADIR to the correct data directory
+          echo "BISON_PKGDATADIR=C:\\ProgramData\\chocolatey\\lib\\winflexbison3\\tools\\data" >> $env:GITHUB_ENV
 
       - name: Build postgres and pgvector
         if: ${{ matrix.os != 'ubuntu-latest' && ! steps.restore-postgres.outputs.cache-hit }}
