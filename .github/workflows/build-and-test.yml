@@ -88,6 +88,7 @@ jobs:
           rustup default 1.85.0
       - name: Install ccache
         if: matrix.os != 'ubuntu-latest'
+        shell: bash
         run: |
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
             brew install ccache
@@ -104,6 +105,7 @@ jobs:
           choco install jq
       - name: Install cargo-pgrx
         if: matrix.os != 'ubuntu-latest'
+        shell: bash
         run: |
           export PATH="$HOME/.cargo/bin:/usr/lib/ccache/bin:$PATH"
           cargo install cargo-pgrx --version 0.12.5 --locked
@@ -111,13 +113,15 @@ jobs:
 
       - name: Build postgres and extensions
         if: ${{ matrix.os != 'ubuntu-latest' && ! steps.restore-postgres.outputs.cache-hit }}
+        shell: bash
         env:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
         run: |
+          INSTALL_BIN="$(pwd)/src/pgserver/pginstall/bin"
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            export PATH="$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH"
+            export PATH="$INSTALL_BIN:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH"
           elif [ "${{ matrix.os }}" = "windows-2022" ]; then
-            export PATH="$USERPROFILE/.cargo/bin:C:\ProgramData\chocolatey\lib\ccache\tools\ccache-${{ matrix.arch }}-windows:$PATH"
+            export PATH="$INSTALL_BIN:$USERPROFILE/.cargo/bin:C:\ProgramData\chocolatey\lib\ccache\tools\ccache-${{ matrix.arch }}-windows:$PATH"
           fi
           make
       - name: Save postgres build
