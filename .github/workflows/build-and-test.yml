@@ -149,15 +149,15 @@ jobs:
             make
           CIBW_BEFORE_ALL_LINUX: |
             set -e
-            yum install -y ccache jq gcc openssl-devel llvm-devel pkg-config
+            yum install -y ccache jq gcc openssl-devel llvm-devel clang-devel pkg-config
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.88.0
             export PATH="$HOME/.cargo/bin:/usr/lib/ccache:$PATH"
             rustup default 1.88.0
             cargo install cargo-pgrx --version 0.12.5 --locked
             make
           CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgserver/pginstall/bin"
-          CIBW_ENVIRONMENT_MACOS: PATH="$HOME/.cargo/bin:$PATH" LIBCLANG_PATH="/opt/homebrew/lib"
-          CIBW_ENVIRONMENT_WINDOWS: PATH="$USERPROFILE\\.cargo\\bin;$PATH" LIBCLANG_PATH="C:\\Program Files\\LLVM\\bin"
+          CIBW_ENVIRONMENT_MACOS: PATH="$PWD/src/pgserver/pginstall/bin:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH" LIBCLANG_PATH="/opt/homebrew/lib"
+          CIBW_ENVIRONMENT_WINDOWS: PATH="$PWD\\src\\pgserver\\pginstall\\bin;$USERPROFILE\\.cargo\\bin;C:\\ProgramData\\chocolatey\\lib\\ccache\\tools\\ccache-AMD64-windows;$PATH" LIBCLANG_PATH="C:\\Program Files\\LLVM\\bin"
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
         run: python -m cibuildwheel --output-dir wheelhouse
       - name: Save postgres build
