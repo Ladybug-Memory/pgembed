@@ -86,6 +86,14 @@ jobs:
         run: |
           rustup install 1.85.0
           rustup default 1.85.0
+      - name: Install ccache
+        if: matrix.os != 'ubuntu-latest'
+        run: |
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            brew install ccache
+          elif [ "${{ matrix.os }}" = "windows-2022" ]; then
+            choco install ccache
+          fi
       - name: Install jq (macOS)
         if: matrix.os == 'macos-latest'
         run: |
@@ -97,7 +105,9 @@ jobs:
       - name: Install cargo-pgrx
         if: matrix.os != 'ubuntu-latest'
         run: |
-          cargo install cargo-pgrx --version 0.12.1 --locked
+          export PATH="$HOME/.cargo/bin:/usr/lib/ccache/bin:$PATH"
+          cargo install cargo-pgrx --version 0.12.5 --locked
+        timeout-minutes: 15
 
       - name: Build postgres and extensions
         if: ${{ matrix.os != 'ubuntu-latest' && ! steps.restore-postgres.outputs.cache-hit }}
@@ -105,9 +115,9 @@ jobs:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
         run: |
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
-            export PATH="$HOME/.cargo/bin:$PATH"
+            export PATH="$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH"
           elif [ "${{ matrix.os }}" = "windows-2022" ]; then
-            export PATH="$USERPROFILE/.cargo/bin:$PATH"
+            export PATH="$USERPROFILE/.cargo/bin:C:\ProgramData\chocolatey\lib\ccache\tools\ccache-${{ matrix.arch }}-windows:$PATH"
           fi
           make
       - name: Save postgres build
@@ -134,11 +144,11 @@ jobs:
             brew install jq llvm
             make
           CIBW_BEFORE_ALL_LINUX: |
-            yum install -y jq gcc openssl-devel llvm-devel libclang-devel
+            yum install -y ccache jq gcc openssl-devel llvm-devel libclang-devel
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.85.0
-            export PATH="$HOME/.cargo/bin:$PATH"
+            export PATH="$HOME/.cargo/bin:/usr/lib/ccache:$PATH"
             rustup default 1.85.0
-            cargo install cargo-pgrx --version 0.12.1 --locked
+            cargo install cargo-pgrx --version 0.12.5 --locked
             make
           CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgserver/pginstall/bin"
           CIBW_ENVIRONMENT_MACOS: PATH="$HOME/.cargo/bin:$PATH" LIBCLANG_PATH="/opt/homebrew/lib"
