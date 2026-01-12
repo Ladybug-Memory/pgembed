@@ -99,9 +99,13 @@ jobs:
         if: ${{ matrix.os != 'ubuntu-latest' && ! steps.restore-postgres.outputs.cache-hit }}
         env:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
-        # this step is implied by Build wheels, but we do it here for caching before python tests run
-        # on ubuntu, cibuildwheel will run this step within a docker container, so it cannot use the cache this way
-        run: make
+        run: |
+          if [ "${{ matrix.os }}" = "macos-latest" ]; then
+            export PATH="$HOME/.cargo/bin:$PATH"
+          elif [ "${{ matrix.os }}" = "windows-2022" ]; then
+            export PATH="$USERPROFILE/.cargo/bin:$PATH"
+          fi
+          make
       - name: Save postgres build
         if: ${{ matrix.os != 'ubuntu-latest' && ! steps.restore-postgres.outputs.cache-hit }}
         id: cache-postgres
@@ -128,7 +132,7 @@ jobs:
           CIBW_BEFORE_ALL_LINUX: |
             yum install -y jq gcc openssl-devel llvm-devel libclang-devel
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.85.0
-            source $HOME/.cargo/env
+            export PATH="$HOME/.cargo/bin:$PATH"
             rustup default 1.85.0
             make
           CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgserver/pginstall/bin"
