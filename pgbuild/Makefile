@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-INSTALL_PREFIX := $(shell pwd)/../src/pgserver/pginstall/
+INSTALL_PREFIX := $(shell pwd)/../src/pgserver/pginstall
 BUILD := $(shell pwd)/pgbuild/
 
 .PHONY: all
@@ -51,9 +51,8 @@ $(PGVECTOR_DIR)/Makefile: $(PGVECTOR_DIR).tar.gz
 
 $(INSTALL_PREFIX)/lib/vector.so: $(PGVECTOR_DIR)/Makefile $(INSTALL_PREFIX)/bin/postgres
 	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
-		&& export PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config \
-		&& $(MAKE) -C $(PGVECTOR_DIR) -j \
-		&& $(MAKE) -C $(PGVECTOR_DIR) install
+		&& $(MAKE) -C $(PGVECTOR_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config -j \
+		&& $(MAKE) -C $(PGVECTOR_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config install
 
 .PHONY: pgvector
 pgvector: postgres $(INSTALL_PREFIX)/lib/vector.so
@@ -73,10 +72,9 @@ $(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.toml: $(PGVECTORSCALE_DIR).tar.gz
 
 $(INSTALL_PREFIX)/lib/vectorscale.so: $(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.toml $(INSTALL_PREFIX)/bin/postgres
 	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
-		&& export PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config \
 		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
 		&& cd $(PGVECTORSCALE_DIR)/pgvectorscale \
-		&& cargo pgrx init --pg17 $$PG_CONFIG \
+		&& cargo pgrx init --pg17 $(INSTALL_PREFIX)/bin/pg_config \
 		&& cargo pgrx install --release
 
 .PHONY: pgvectorscale
