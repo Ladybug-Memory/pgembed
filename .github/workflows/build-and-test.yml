@@ -94,6 +94,10 @@ jobs:
         if: matrix.os == 'windows-2022'
         run: |
           choco install jq
+      - name: Install cargo-pgrx
+        if: matrix.os != 'ubuntu-latest'
+        run: |
+          cargo install cargo-pgrx --version 0.12.1 --locked
 
       - name: Build postgres and extensions
         if: ${{ matrix.os != 'ubuntu-latest' && ! steps.restore-postgres.outputs.cache-hit }}
@@ -134,6 +138,7 @@ jobs:
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.85.0
             export PATH="$HOME/.cargo/bin:$PATH"
             rustup default 1.85.0
+            cargo install cargo-pgrx --version 0.12.1 --locked
             make
           CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgserver/pginstall/bin"
           CIBW_ENVIRONMENT_MACOS: PATH="$HOME/.cargo/bin:$PATH" LIBCLANG_PATH="/opt/homebrew/lib"

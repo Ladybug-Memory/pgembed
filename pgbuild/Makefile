@@ -76,9 +76,6 @@ $(INSTALL_PREFIX)/lib/vectorscale.so: $(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.t
 		&& export PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config \
 		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
 		&& cd $(PGVECTORSCALE_DIR)/pgvectorscale \
-		&& PGRX_VERSION=$$(cargo metadata --format-version 1 | jq -r '.packages[] | select(.name == "pgrx") | .version') \
-		&& echo "Installing cargo-pgrx version $$PGRX_VERSION" \
-		&& cargo install --locked cargo-pgrx --version $$PGRX_VERSION \
 		&& cargo pgrx init --pg17 $$PG_CONFIG \
 		&& cargo pgrx install --release
 
