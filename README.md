@@ -12,7 +12,7 @@
 
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/anomalyco/pgembed/main/pgembed_square_small.png"/>
+  <img src="https://raw.githubusercontent.com/Ladybug-Memory/pgembed/main/pgembed_square_small.png"/>
 </p>
 
 # pgembed: pip-installable, embedded postgres server + pgvector extension for your python app
