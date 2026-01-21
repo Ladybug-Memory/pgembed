@@ -7,7 +7,7 @@ import tempfile
 
 POSTGRES_BIN_PATH = Path(__file__).parent / "pginstall" / "bin"
 
-_logger = logging.getLogger('pgserver')
+_logger = logging.getLogger('pgembed')
 
 def create_command_function(pg_exe_name : str) -> Callable:
     def command(args : List[str], pgdata : Optional[Path] = None, **kwargs) -> str:

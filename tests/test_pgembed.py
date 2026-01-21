@@ -1,14 +1,14 @@
 import pytest
-import pgserver
+import pgembed
 import subprocess
 import tempfile
 from typing import Optional, Union
 import multiprocessing as mp
 import shutil
 from pathlib import Path
-import pgserver.utils
+import pgembed.utils
 import socket
-from pgserver.utils import find_suitable_port, process_is_running
+from pgembed.utils import find_suitable_port, process_is_running
 import psutil
 import platform
 import sqlalchemy as sa
@@ -17,7 +17,7 @@ from sqlalchemy_utils import database_exists, create_database
 import logging
 import os
 
-def _check_sqlalchemy_works(srv : pgserver.PostgresServer):
+def _check_sqlalchemy_works(srv : pgembed.PostgresServer):
     database_name = 'testdb'
     uri = srv.get_uri(database_name)
 
@@ -39,7 +39,7 @@ def _check_sqlalchemy_works(srv : pgserver.PostgresServer):
         assert result
         assert result[0] == 1
 
-def _check_postmaster_info(pgdata : Path, postmaster_info : pgserver.utils.PostmasterInfo):
+def _check_postmaster_info(pgdata : Path, postmaster_info : pgembed.utils.PostmasterInfo):
     assert postmaster_info is not None
     assert postmaster_info.pgdata is not None
     assert postmaster_info.pgdata == pgdata
@@ -53,9 +53,9 @@ def _check_postmaster_info(pgdata : Path, postmaster_info : pgserver.utils.Postm
         assert postmaster_info.socket_path.is_socket()
 
 
-def _check_server(pg : pgserver.PostgresServer) -> int:
+def _check_server(pg : pgembed.PostgresServer) -> int:
     assert pg.pgdata.exists()
-    postmaster_info = pgserver.utils.PostmasterInfo.read_from_pgdata(pg.pgdata)
+    postmaster_info = pgembed.utils.PostmasterInfo.read_from_pgdata(pg.pgdata)
     assert postmaster_info is not None
     assert postmaster_info.pid is not None
     _check_postmaster_info(pg.pgdata, postmaster_info)
@@ -107,14 +107,14 @@ def test_get_server():
         pid = None
         try:
             # check case when initializing the pgdata dir
-            with pgserver.get_server(tmpdir) as pg:
+            with pgembed.get_server(tmpdir) as pg:
                 pid = _check_server(pg)
 
             assert not process_is_running(pid)
             assert pg.pgdata.exists()
 
             # check case when pgdata dir is already initialized
-            with pgserver.get_server(tmpdir) as pg:
+            with pgembed.get_server(tmpdir) as pg:
                 pid = _check_server(pg)
 
             assert not process_is_running(pid)
@@ -126,9 +126,9 @@ def test_reentrant():
     with tempfile.TemporaryDirectory() as tmpdir:
         pid = None
         try:
-            with pgserver.get_server(tmpdir) as pg:
+            with pgembed.get_server(tmpdir) as pg:
                 pid = _check_server(pg)
-                with pgserver.get_server(tmpdir) as pg2:
+                with pgembed.get_server(tmpdir) as pg2:
                     assert pg2 is pg
                     _check_server(pg)
 
@@ -140,7 +140,7 @@ def test_reentrant():
             _kill_server(pid)
 
 def _start_server_in_separate_process(pgdata, queue_in : Optional[mp.Queue], queue_out : mp.Queue, cleanup_mode : Optional[str]):
-    with pgserver.get_server(pgdata, cleanup_mode=cleanup_mode) as pg:
+    with pgembed.get_server(pgdata, cleanup_mode=cleanup_mode) as pg:
         pid = _check_server(pg)
         queue_out.put(pid)
 
@@ -160,7 +160,7 @@ def test_unix_domain_socket():
         with tempfile.TemporaryDirectory(dir='/tmp/', prefix=prefix) as tmpdir:
             pid = None
             try:
-                with pgserver.get_server(tmpdir) as pg:
+                with pgembed.get_server(tmpdir) as pg:
                     pid = _check_server(pg)
 
                 assert not process_is_running(pid)
@@ -176,14 +176,14 @@ def test_pg_ctl():
     if platform.system() != 'Windows' and os.geteuid() == 0:
         # on Linux root, this test would fail.
         # we'd need to create a user etc to run the command, which is not worth it
-        # pgserver does this internally, but not worth it for this test
+        # pgembed does this internally, but not worth it for this test
         pytest.skip("This test is not run as root on Linux.")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         pid = None
         try:
-            with pgserver.get_server(tmpdir) as pg:
-                output = pgserver.pg_ctl(['status'], str(pg.pgdata))
+            with pgembed.get_server(tmpdir) as pg:
+                output = pgembed.pg_ctl(['status'], str(pg.pgdata))
                 assert 'server is running' in output.splitlines()[0]
 
         finally:
@@ -205,7 +205,7 @@ def test_stale_postmaster():
         pid2 = None
 
         try:
-            with pgserver.get_server(tmpdir, cleanup_mode='stop') as pg:
+            with pgembed.get_server(tmpdir, cleanup_mode='stop') as pg:
                 pid = _check_server(pg)
                 pgdata = pg.pgdata
                 postmaster_pid = pgdata / 'postmaster.pid'
@@ -215,7 +215,7 @@ def test_stale_postmaster():
 
             # restore the backup to gurantee a stale postmaster.pid file
             shutil.copy2(str(postmaster_pid) + '.bak', str(postmaster_pid))
-            with pgserver.get_server(tmpdir) as pg:
+            with pgembed.get_server(tmpdir) as pg:
                 pid2 = _check_server(pg)
         finally:
             _kill_server(pid)
@@ -226,7 +226,7 @@ def test_cleanup_delete():
     with tempfile.TemporaryDirectory() as tmpdir:
         pid = None
         try:
-            with pgserver.get_server(tmpdir, cleanup_mode='delete') as pg:
+            with pgembed.get_server(tmpdir, cleanup_mode='delete') as pg:
                 pid = _check_server(pg)
 
             assert not process_is_running(pid)
@@ -238,7 +238,7 @@ def test_cleanup_none():
     with tempfile.TemporaryDirectory() as tmpdir:
         pid = None
         try:
-            with pgserver.get_server(tmpdir, cleanup_mode=None) as pg:
+            with pgembed.get_server(tmpdir, cleanup_mode=None) as pg:
                 pid = _check_server(pg)
 
             assert process_is_running(pid)
@@ -249,7 +249,7 @@ def test_cleanup_none():
 @pytest.fixture
 def tmp_postgres():
     tmp_pg_data = tempfile.mkdtemp()
-    with pgserver.get_server(tmp_pg_data, cleanup_mode='delete') as pg:
+    with pgembed.get_server(tmp_pg_data, cleanup_mode='delete') as pg:
         yield pg
 
 def test_pgvector(tmp_postgres):
@@ -260,7 +260,7 @@ def test_start_failure_log(caplog):
     """ Test server log contents are shown in python log when failures
     """
     with tempfile.TemporaryDirectory() as tmpdir:
-        with pgserver.get_server(tmpdir) as _:
+        with pgembed.get_server(tmpdir) as _:
             pass
 
         ## now delete some files to make it fail
@@ -268,20 +268,20 @@ def test_start_failure_log(caplog):
             f.unlink()
 
         with pytest.raises(subprocess.CalledProcessError):
-            with pgserver.get_server(tmpdir) as _:
+            with pgembed.get_server(tmpdir) as _:
                 pass
 
         assert 'postgres: could not access the server configuration file' in caplog.text
 
 
 def test_no_conflict():
-    """ test we can start pgservers on two different datadirs with no conflict (eg port conflict)
+    """ test we can start pgembeds on two different datadirs with no conflict (eg port conflict)
     """
     pid1 = None
     pid2 = None
     try:
         with tempfile.TemporaryDirectory() as tmpdir1, tempfile.TemporaryDirectory() as tmpdir2:
-            with pgserver.get_server(tmpdir1) as pg1, pgserver.get_server(tmpdir2) as pg2:
+            with pgembed.get_server(tmpdir1) as pg1, pgembed.get_server(tmpdir2) as pg2:
                 pid1 = _check_server(pg1)
                 pid2 = _check_server(pg2)
     finally:
@@ -314,7 +314,7 @@ def _reuse_deleted_datadir(prefix: str):
             server_proc = psutil.Process(curr_pid)
             assert server_proc.is_running()
             server_processes.append(server_proc)
-            postmaster = pgserver.utils.PostmasterInfo.read_from_pgdata(pgdata)
+            postmaster = pgembed.utils.PostmasterInfo.read_from_pgdata(pgdata)
 
             if postmaster.shmget_id is not None:
                 shmem_ids.append(postmaster.shmget_id)
@@ -378,7 +378,7 @@ def test_multiprocess_shared():
             # wait for child to start server
             server_pid_child = queue_from_child.get()
 
-            with pgserver.get_server(tmpdir) as pg:
+            with pgembed.get_server(tmpdir) as pg:
                 server_pid_parent = _check_server(pg)
                 assert server_pid_child == server_pid_parent
 

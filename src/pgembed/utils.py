@@ -12,7 +12,7 @@ import psutil
 import datetime
 import shutil
 
-_logger = logging.getLogger('pgserver')
+_logger = logging.getLogger('pgembed')
 
 class PostmasterInfo:
     """Struct with contents of the PGDATA/postmaster.pid file, contains information about the running server.

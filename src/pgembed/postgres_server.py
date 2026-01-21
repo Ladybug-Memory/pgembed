@@ -15,7 +15,7 @@ from .utils import find_suitable_port, find_suitable_socket_dir, DiskList, Postm
 if platform.system() != 'Windows':
     from .utils import ensure_user_exists, ensure_prefix_permissions, ensure_folder_permissions
 
-_logger = logging.getLogger('pgserver')
+_logger = logging.getLogger('pgembed')
 
 class PostgresServer:
     """ Provides a common interface for interacting with a server.
@@ -47,7 +47,7 @@ class PostgresServer:
         if platform.system() != 'Windows' and os.geteuid() == 0:
             # running as root
             # need a different system user to run as
-            self.system_user = 'pgserver'
+            self.system_user = 'pgembed'
             ensure_user_exists(self.system_user)
 
         self.postgres_user = "postgres"

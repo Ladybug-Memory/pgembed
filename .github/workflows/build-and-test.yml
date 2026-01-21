@@ -67,7 +67,7 @@ jobs:
         with:
           path: |
             pgbuild
-            src/pgserver/pginstall
+            src/pgembed/pginstall
           key: ${{ runner.os }}-${{ runner.arch }}-build-${{ env.cache-name }}-${{
             hashFiles('Makefile', 'pgbuild/Makefile', '.github/workflows/build-and-test.yml') }}
       - name: Install bison (Windows)
@@ -117,7 +117,7 @@ jobs:
         env:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
         run: |
-          INSTALL_BIN="$(pwd)/src/pgserver/pginstall/bin"
+          INSTALL_BIN="$(pwd)/src/pgembed/pginstall/bin"
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
             export PATH="$INSTALL_BIN:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH"
           elif [ "${{ matrix.os }}" = "windows-2022" ]; then
@@ -133,7 +133,7 @@ jobs:
         with:
           path: |
            pgbuild
-           src/pgserver/pginstall
+           src/pgembed/pginstall
           key: ${{ runner.os }}-${{ runner.arch }}-build-${{ env.cache-name }}-${{
             hashFiles('Makefile', 'pgbuild/Makefile', '.github/workflows/build-and-test.yml') }}
       - name: Build wheels
@@ -155,9 +155,9 @@ jobs:
             rustup default 1.88.0
             cargo install cargo-pgrx --version 0.12.5 --locked
             make
-          CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgserver/pginstall/bin" LIBCLANG_PATH="/usr/lib64" RUSTFLAGS="-C target-feature=+avx2,+fma"
-          CIBW_ENVIRONMENT_MACOS: PATH="$PWD/src/pgserver/pginstall/bin:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH" LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib"
-          CIBW_ENVIRONMENT_WINDOWS: PATH="$PWD\\src\\pgserver\\pginstall\\bin;$USERPROFILE\\.cargo\\bin;C:\\ProgramData\\chocolatey\\lib\\ccache\\tools\\ccache-AMD64-windows;$PATH" LIBCLANG_PATH="C:\\Program Files\\LLVM\\bin"
+          CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgembed/pginstall/bin" LIBCLANG_PATH="/usr/lib64" RUSTFLAGS="-C target-feature=+avx2,+fma"
+          CIBW_ENVIRONMENT_MACOS: PATH="$PWD/src/pgembed/pginstall/bin:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH" LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib"
+          CIBW_ENVIRONMENT_WINDOWS: PATH="$PWD\\src\\pgembed\\pginstall\\bin;$USERPROFILE\\.cargo\\bin;C:\\ProgramData\\chocolatey\\lib\\ccache\\tools\\ccache-AMD64-windows;$PATH" LIBCLANG_PATH="C:\\Program Files\\LLVM\\bin"
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
         run: python -m cibuildwheel --output-dir wheelhouse
       - name: Save postgres build
@@ -169,7 +169,7 @@ jobs:
         with:
           path: |
            pgbuild
-           src/pgserver/pginstall
+           src/pgembed/pginstall
           key: ${{ runner.os }}-${{ runner.arch }}-build-${{ env.cache-name }}-${{
             hashFiles('Makefile', 'pgbuild/Makefile', '.github/workflows/build-and-test.yml') }}
       - uses: actions/upload-artifact@v4
@@ -185,7 +185,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/pgserver  # Replace <package-name> with your PyPI project name
+      url: https://pypi.org/p/pgembed  # Replace <package-name> with your PyPI project name
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
     steps:

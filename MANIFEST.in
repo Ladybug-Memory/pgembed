@@ -1,1 +1,1 @@
-graft src/pgserver/pginstall
+graft src/pgembed/pginstall

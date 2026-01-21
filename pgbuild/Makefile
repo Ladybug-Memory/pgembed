@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-INSTALL_PREFIX := $(shell pwd)/../src/pgserver/pginstall
+INSTALL_PREFIX := $(shell pwd)/../src/pgembed/pginstall
 BUILD := $(shell pwd)/pgbuild/
 
 # Detect Windows and add .exe extension for executables
