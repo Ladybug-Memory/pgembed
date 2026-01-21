@@ -104,7 +104,7 @@ jobs:
         run: |
           choco install jq
       - name: Install cargo-pgrx
-        if: matrix.os != 'ubuntu-latest'
+        if: matrix.os != 'ubuntu-latest' && matrix.os != 'windows-2022'
         shell: bash
         run: |
           export PATH="$HOME/.cargo/bin:/usr/lib/ccache/bin:$PATH"
