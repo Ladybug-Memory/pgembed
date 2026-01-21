@@ -10,7 +10,10 @@ else
 endif
 
 .PHONY: all
+all: pgvector postgres
+ifneq ($(OS),Windows_NT)
 all: pgvector postgres pgvectorscale
+endif
 
 ### postgres
 POSTGRES_VERSION := 17-stable
@@ -78,11 +81,15 @@ $(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.toml: $(PGVECTORSCALE_DIR).tar.gz
 	touch $(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.toml
 
 $(INSTALL_PREFIX)/lib/vectorscale.so: $(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.toml $(INSTALL_PREFIX)/bin/postgres
+ifneq ($(OS),Windows_NT)
 	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
 		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
 		&& cd $(PGVECTORSCALE_DIR)/pgvectorscale \
 		&& cargo pgrx init --pg17 $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
 		&& cargo pgrx install --release
+else
+	$(error pgvectorscale build is not supported on Windows due to cargo-pgrx issues)
+endif
 
 .PHONY: pgvectorscale
 pgvectorscale: postgres $(INSTALL_PREFIX)/lib/vectorscale.so
