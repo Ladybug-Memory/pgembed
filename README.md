@@ -35,31 +35,14 @@ Additionally, this package includes the [pgvector](https://github.com/pgvector/p
 `pgembed.get_server(MY_DATA_DIR)` on the same dir (wait for last one). You can blow away your PGDATA dir and start again.
 * For lower-level control, wrappers to all binaries, such as `initdb`, `pg_ctl`, `psql`, `pg_config`. Includes header files in case you wish to build some other extension and use it against these binaries.
 
-```py
-# Example 1: postgres backed application
-import pgembed
+## Sample Usage
 
-db = pgembed.get_server(MYPGDATA)
-# server ready for connection.
-
-print(db.psql('create extension vector'))
-db_uri = db.get_uri()
-# use uri with sqlalchemy / psycopg, etc, see colab.
-
-# if no other process is using this server, it will be shutdown at exit,
-# if other process use same pgadata, server process will be shutdown when all stop.
 ```
-
-```py
-# Example 2: Testing
-import tempfile
-import pytest
-@pytest.fixture
-def tmp_postgres():
-    tmp_pg_data = tempfile.mkdtemp()
-    pg = pgembed.get_server(tmp_pg_data, cleanup_mode='stop')
-    yield pg
-    pg.cleanup()
+cd examples
+uv sync
+for script in *.py; do
+  uv run $script
+done
 ```
 
 Postgres binaries in the package can be found in the directory pointed
