@@ -12,7 +12,7 @@ endif
 .PHONY: all
 all: pgvector postgres
 ifneq ($(OS),Windows_NT)
-all: pgvector postgres pgvectorscale
+all: pg_duckdb pgvector postgres pgvectorscale
 endif
 
 ### postgres
@@ -67,6 +67,27 @@ $(INSTALL_PREFIX)/lib/vector.so: $(PGVECTOR_DIR)/Makefile $(INSTALL_PREFIX)/bin/
 .PHONY: pgvector
 pgvector: postgres $(INSTALL_PREFIX)/lib/vector.so
 
+### pg_duckdb
+PG_DUCKDB_TAG := v1.1.1
+PG_DUCKDB_REPO := https://github.com/duckdb/pg_duckdb
+PG_DUCKDB_DIR := pg_duckdb-$(PG_DUCKDB_TAG)
+
+$(PG_DUCKDB_DIR)/Makefile:
+	git clone --branch $(PG_DUCKDB_TAG) --single-branch $(PG_DUCKDB_REPO) $(PG_DUCKDB_DIR)
+	cd $(PG_DUCKDB_DIR) && git submodule update --init --recursive
+	touch $(PG_DUCKDB_DIR)/Makefile
+
+$(INSTALL_PREFIX)/lib/pg_duckdb.so: $(PG_DUCKDB_DIR)/Makefile $(INSTALL_PREFIX)/bin/postgres
+ifneq ($(OS),Windows_NT)
+	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
+		&& $(MAKE) -C $(PG_DUCKDB_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) DUCKDB_BUILD=ReleaseStatic install
+else
+	$(error pg_duckdb build is not supported on Windows due to cargo-pgrx issues)
+endif
+
+.PHONY: pg_duckdb
+pg_duckdb: postgres $(INSTALL_PREFIX)/lib/pg_duckdb.so
+
 ### pgvectorscale
 PGVECTORSCALE_TAG := 0.5.1
 PGVECTORSCALE_URL := https://github.com/timescale/pgvectorscale/archive/refs/tags/$(PGVECTORSCALE_TAG).tar.gz
@@ -102,6 +123,7 @@ clean:
 	rm -rf $(POSTGRES_BLD)
 	rm -rf $(PGVECTOR_DIR)
 	rm -rf $(PGVECTORSCALE_DIR)
+	rm -rf $(PG_DUCKDB_DIR)
 
 clean-all: clean
 	rm -rf *.tar.gz

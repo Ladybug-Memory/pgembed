@@ -81,7 +81,7 @@ jobs:
           # Set BISON_PKGDATADIR to the correct data directory
           echo "BISON_PKGDATADIR=C:\\ProgramData\\chocolatey\\lib\\winflexbison3\\tools\\data" >> $env:GITHUB_ENV
 
-      - name: Install Rust and jq
+      - name: Install Rust
         if: matrix.os != 'ubuntu-latest'
         run: |
           rustup install 1.88.0
@@ -95,11 +95,11 @@ jobs:
           elif [ "${{ matrix.os }}" = "windows-2022" ]; then
             choco install ccache
           fi
-      - name: Install jq (macOS)
+      - name: Install tools and libs (macOS)
         if: matrix.os == 'macos-latest'
         run: |
-          brew install jq
-      - name: Install jq (Windows)
+          brew install jq lz4
+      - name: Install tools and libs (Windows)
         if: matrix.os == 'windows-2022'
         run: |
           choco install jq
@@ -120,6 +120,7 @@ jobs:
           INSTALL_BIN="$(pwd)/src/pgembed/pginstall/bin"
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
             export PATH="$INSTALL_BIN:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH"
+            export LDFLAGS="-L/opt/homebrew/lib"
           elif [ "${{ matrix.os }}" = "windows-2022" ]; then
             export PATH="$INSTALL_BIN:$USERPROFILE/.cargo/bin:C:\ProgramData\chocolatey\lib\ccache\tools\ccache-${{ matrix.arch }}-windows:$PATH"
           fi
@@ -142,21 +143,22 @@ jobs:
           CIBW_SKIP: cp314* cp38-* *-musllinux*
           CIBW_MANYLINUX: manylinux_2_39
           CIBW_BEFORE_ALL_WINDOWS: |
-            choco install llvm
+            choco install llvm cmake ninja
             make
           CIBW_BEFORE_ALL_MACOS: |
-            brew install jq llvm
+            brew install jq llvm cmake ninja lz4
             make
           CIBW_BEFORE_ALL_LINUX: |
             set -e
             yum install -y ccache jq gcc openssl-devel llvm-devel clang-devel pkg-config
+            yum install -y cmake ninja-build lz4-devel libcurl-devel glib2-devel
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.88.0
             export PATH="$HOME/.cargo/bin:/usr/lib/ccache:$PATH"
             rustup default 1.88.0
             cargo install cargo-pgrx --version 0.12.5 --locked
             make
           CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgembed/pginstall/bin" LIBCLANG_PATH="/usr/lib64" RUSTFLAGS="-C target-feature=+avx2,+fma"
-          CIBW_ENVIRONMENT_MACOS: PATH="$PWD/src/pgembed/pginstall/bin:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH" LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib"
+          CIBW_ENVIRONMENT_MACOS: PATH="$PWD/src/pgembed/pginstall/bin:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH" LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib" LDFLAGS="-L/opt/homebrew/lib"
           CIBW_TEST_COMMAND_WINDOWS: true  # Tests disabled pending issues with executing binaries built
           CIBW_ENVIRONMENT_WINDOWS: PATH="$PWD\\src\\pgembed\\pginstall\\bin;$USERPROFILE\\.cargo\\bin;C:\\ProgramData\\chocolatey\\lib\\ccache\\tools\\ccache-AMD64-windows;$PATH" LIBCLANG_PATH="C:\\Program Files\\LLVM\\bin"
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
