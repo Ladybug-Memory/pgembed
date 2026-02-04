@@ -30,6 +30,7 @@ Think of it like SQLite, but with the power of PostgreSQL. Just `pip install pge
 - **Handles edge cases**: Works in Docker containers, Google Colab, and environments with multiple PostgreSQL installations
 - **Simple initialization**: `pgembed.get_server(MY_DATA_DIR)` handles `initdb`, port management, and process cleanup automatically
 - **Vector search ready**: Includes [pgvector](https://github.com/pgvector/pgvector) and [pgvectorscale](https://github.com/timescale/pgvectorscale) extensions for vector similarity queries and high-performance vector storage
+- **Text search ready**: Includes [pg_textsearch](https://github.com/timescale/pg_textsearch) extension for BM25-based full-text search with ranking
 
 ## Quick start
 
@@ -52,4 +53,4 @@ pgembed is a fork of [pgserver](https://github.com/orm011/pgserver), which was i
 
 - Multi-platform support (Linux, macOS, Windows)
 - Robust process management and cleanup
-- Built-in pgvector and pgvectorscale extensions
+- Built-in pgvector, pgvectorscale, and pg_textsearch extensions
