@@ -12,7 +12,7 @@ endif
 .PHONY: all
 all: pgvector postgres
 ifneq ($(OS),Windows_NT)
-all: pg_duckdb pgvector postgres pgvectorscale
+all: pgtextsearch pg_duckdb pgvector postgres pgvectorscale
 endif
 
 ### postgres
@@ -115,6 +115,27 @@ endif
 .PHONY: pgvectorscale
 pgvectorscale: postgres $(INSTALL_PREFIX)/lib/vectorscale.so
 
+### pgtextsearch
+PGTEXTSEARCH_TAG := v0.5.0
+PGTEXTSEARCH_URL := https://github.com/timescale/pg_textsearch/archive/refs/tags/$(PGTEXTSEARCH_TAG).tar.gz
+PGTEXTSEARCH_DIR := pgtextsearch-$(PGTEXTSEARCH_TAG)
+
+$(PGTEXTSEARCH_DIR).tar.gz:
+	curl -L -o $(PGTEXTSEARCH_DIR).tar.gz $(PGTEXTSEARCH_URL)
+
+$(PGTEXTSEARCH_DIR)/Makefile: $(PGTEXTSEARCH_DIR).tar.gz
+	mkdir -p $(PGTEXTSEARCH_DIR)
+	tar xzf $(PGTEXTSEARCH_DIR).tar.gz -C $(PGTEXTSEARCH_DIR) --strip-components=1
+	touch $(PGTEXTSEARCH_DIR)/Makefile
+
+$(INSTALL_PREFIX)/lib/pg_textsearch.so: $(PGTEXTSEARCH_DIR)/Makefile $(INSTALL_PREFIX)/bin/postgres
+	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
+		&& $(MAKE) -C $(PGTEXTSEARCH_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) -j \
+		&& $(MAKE) -C $(PGTEXTSEARCH_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) install
+
+.PHONY: pgtextsearch
+pgtextsearch: postgres $(INSTALL_PREFIX)/lib/pg_textsearch.so
+
 ### other
 .PHONY: clean clean-all
 clean:
@@ -124,6 +145,7 @@ clean:
 	rm -rf $(PGVECTOR_DIR)
 	rm -rf $(PGVECTORSCALE_DIR)
 	rm -rf $(PG_DUCKDB_DIR)
+	rm -rf $(PGTEXTSEARCH_DIR)
 
 clean-all: clean
 	rm -rf *.tar.gz
