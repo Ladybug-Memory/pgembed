@@ -3,7 +3,7 @@ name = "pgembed-examples"
 version = "0.1.0"
 requires-python = ">=3.12"
 dependencies = [
-    "pgembed>=0.1.5",
+    "pgembed>=0.1.7",
     "sqlalchemy>=2.0.0",
     "sqlalchemy-utils>=0.42.0",
     "psycopg2-binary>=2.9.11",
