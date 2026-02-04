@@ -1,13 +1,13 @@
 [project]
 name = "pgembed" # Required
-version = "0.1.6"  # Required
+version = "0.1.7"  # Required
 description = "Self-contained postgres server for your python applications" # Required
 readme = "README.md" # Optional
 requires-python = ">=3.12"
 license = {file = "LICENSE.txt"}
 urls={repository="https://github.com/Ladybug-Memory/pgembed"}
 authors=[{ name="Oscar Moll", email="orm@csail.mit.edu" }, { name="Arun Sharma", email="arun@sharma-home.net" }]
-keywords=["postgresql", "pgvector", "pgembed", "rag"]
+keywords=["postgresql", "pgvector", "pg_duckdb", "pgembed", "pg_textsearch", "rag"]
 dependencies = [
     "fasteners>=0.19",
     "platformdirs>=4.0.0",
