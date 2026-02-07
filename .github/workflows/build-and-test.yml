@@ -152,8 +152,17 @@ jobs:
             make
           CIBW_BEFORE_ALL_LINUX: |
             set -e
-            yum install -y ccache jq gcc openssl-devel llvm-devel clang-devel pkg-config
-            yum install -y cmake ninja-build lz4-devel libcurl-devel glib2-devel
+            if command -v apk &> /dev/null; then
+              apk add --no-cache ccache jq gcc openssl openssl-dev llvm-dev clang-dev pkgconfig
+              apk add --no-cache cmake ninja build-base lz4-dev curl-dev glib-dev
+            elif command -v yum &> /dev/null; then
+              yum install -y ccache jq gcc openssl-devel llvm-devel clang-devel pkg-config
+              yum install -y cmake ninja-build lz4-devel libcurl-devel glib2-devel
+            elif command -v apt-get &> /dev/null; then
+              apt-get update
+              apt-get install -y ccache jq gcc libssl-dev llvm-dev clang-dev pkg-config
+              apt-get install -y cmake ninja-build liblz4-dev libcurl4-openssl-dev libglib2.0-dev
+            fi
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.88.0
             export PATH="$HOME/.cargo/bin:/usr/lib/ccache:$PATH"
             rustup default 1.88.0
