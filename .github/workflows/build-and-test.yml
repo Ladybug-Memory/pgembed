@@ -153,7 +153,7 @@ jobs:
           CIBW_BEFORE_ALL_LINUX: |
             set -e
             if command -v apk &> /dev/null; then
-              apk add --no-cache ccache jq gcc openssl openssl-dev openssl-libs-static llvm-dev clang-dev pkgconfig flex bison
+              apk add --no-cache ccache jq gcc openssl openssl-dev openssl-libs-static llvm-dev clang-dev clang-libs clang-static pkgconfig flex bison
               apk add --no-cache cmake ninja build-base lz4-dev lz4-static curl-dev curl-static glib-dev glib-static zlib-static bzip2-static findutils
             elif command -v yum &> /dev/null; then
               yum install -y ccache jq gcc openssl-devel llvm-devel clang-devel pkg-config
@@ -168,7 +168,10 @@ jobs:
             rustup default 1.88.0
             cargo install cargo-pgrx --version 0.12.5 --locked
             make
-          CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgembed/pginstall/bin" LIBCLANG_PATH="/usr/lib64" RUSTFLAGS="-C target-feature=+avx2,+fma"
+          CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgembed/pginstall/bin"
+          CIBW_ENVIRONMENT_LINUX_X86_64: RUSTFLAGS="-C target-feature=+avx2,+fma"
+          CIBW_ENVIRONMENT_MUSLLINUX: LIBCLANG_STATIC_PATH=/usr/lib
+          CIBW_ENVIRONMENT_MANYLINUX: LIBCLANG_PATH=/usr/lib64
           CIBW_ENVIRONMENT_MACOS: PATH="$PWD/src/pgembed/pginstall/bin:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH" LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib" LDFLAGS="-L/opt/homebrew/lib -lssl -lcrypto" MACOSX_DEPLOYMENT_TARGET=15.0
           CIBW_TEST_COMMAND_WINDOWS: true  # Tests disabled pending issues with executing binaries built
           CIBW_ENVIRONMENT_WINDOWS: PATH="$PWD\\src\\pgembed\\pginstall\\bin;$USERPROFILE\\.cargo\\bin;C:\\ProgramData\\chocolatey\\lib\\ccache\\tools\\ccache-AMD64-windows;$PATH" LIBCLANG_PATH="C:\\Program Files\\LLVM\\bin"
