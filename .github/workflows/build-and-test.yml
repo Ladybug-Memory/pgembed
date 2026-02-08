@@ -153,8 +153,8 @@ jobs:
           CIBW_BEFORE_ALL_LINUX: |
             set -e
             if command -v apk &> /dev/null; then
-              apk add --no-cache ccache jq gcc openssl openssl-dev llvm-dev clang-dev pkgconfig
-              apk add --no-cache cmake ninja build-base lz4-dev curl-dev glib-dev
+              apk add --no-cache ccache jq gcc openssl openssl-dev openssl-libs-static llvm-dev clang-dev pkgconfig flex bison
+              apk add --no-cache cmake ninja build-base lz4-dev lz4-static curl-dev curl-static glib-dev glib-static zlib-static bzip2-static findutils
             elif command -v yum &> /dev/null; then
               yum install -y ccache jq gcc openssl-devel llvm-devel clang-devel pkg-config
               yum install -y cmake ninja-build lz4-devel libcurl-devel glib2-devel
