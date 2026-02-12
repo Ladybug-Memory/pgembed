@@ -121,8 +121,10 @@ jobs:
           if [ "${{ matrix.os }}" = "macos-latest" ]; then
             export PATH="$INSTALL_BIN:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH"
             export LDFLAGS="-L/opt/homebrew/lib -lssl -lcrypto"
+            export IS_MUSL=0
           elif [ "${{ matrix.os }}" = "windows-2022" ]; then
             export PATH="$INSTALL_BIN:$USERPROFILE/.cargo/bin:C:\ProgramData\chocolatey\lib\ccache\tools\ccache-${{ matrix.arch }}-windows:$PATH"
+            export IS_MUSL=0
           fi
           make
       - name: Save postgres build
@@ -146,9 +148,11 @@ jobs:
           CIBW_MUSHLINUX_AARCH64: manylinux_2_39
           CIBW_BEFORE_ALL_WINDOWS: |
             choco install llvm cmake ninja
+            export IS_MUSL=0
             make
           CIBW_BEFORE_ALL_MACOS: |
             brew install jq llvm cmake ninja lz4 openssl
+            export IS_MUSL=0
             make
           CIBW_BEFORE_ALL_LINUX: |
             set -e
@@ -167,6 +171,11 @@ jobs:
             export PATH="$HOME/.cargo/bin:/usr/lib/ccache:$PATH"
             rustup default 1.88.0
             cargo install cargo-pgrx --version 0.12.5 --locked
+            if command -v ldd &> /dev/null && ldd --version 2>&1 | grep -qi musl; then
+              export IS_MUSL=1
+            else
+              export IS_MUSL=0
+            fi
             make
           CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgembed/pginstall/bin"
           CIBW_ENVIRONMENT_LINUX_X86_64: RUSTFLAGS="-C target-feature=+avx2,+fma"
