@@ -176,9 +176,11 @@ jobs:
             else
               export IS_MUSL=0
             fi
+            if [ "$(uname -m)" = "x86_64" ]; then
+              export RUSTFLAGS="-C target-feature=+avx2,+fma"
+            fi
             make
           CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgembed/pginstall/bin"
-          CIBW_ENVIRONMENT_LINUX_X86_64: RUSTFLAGS="-C target-feature=+avx2,+fma"
           CIBW_ENVIRONMENT_MUSLLINUX: LIBCLANG_STATIC_PATH=/usr/lib
           CIBW_ENVIRONMENT_MANYLINUX: LIBCLANG_PATH=/usr/lib64
           CIBW_ENVIRONMENT_MACOS: PATH="$PWD/src/pgembed/pginstall/bin:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH" LIBCLANG_PATH="/opt/homebrew/opt/llvm/lib" LDFLAGS="-L/opt/homebrew/lib -lssl -lcrypto" MACOSX_DEPLOYMENT_TARGET=15.0
