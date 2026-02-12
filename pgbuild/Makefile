@@ -1,6 +1,7 @@
 SHELL := /bin/bash
 INSTALL_PREFIX := $(shell pwd)/../src/pgembed/pginstall
 BUILD := $(shell pwd)/pgbuild/
+IS_MUSL ?= $(shell if command -v ldd >/dev/null 2>&1 && ldd --version 2>&1 | grep -qi musl; then echo 1; else echo 0; fi)
 
 # Detect Windows and add .exe extension for executables
 ifeq ($(OS),Windows_NT)
@@ -9,10 +10,21 @@ else
     EXE_EXT :=
 endif
 
+ifeq ($(OS),Windows_NT)
+	RUST_EXTENSIONS_SUPPORTED := 0
+else ifeq ($(IS_MUSL),1)
+	RUST_EXTENSIONS_SUPPORTED := 0
+else
+	RUST_EXTENSIONS_SUPPORTED := 1
+endif
+
 .PHONY: all
 all: pgvector postgres
 ifneq ($(OS),Windows_NT)
-all: pgtextsearch pg_duckdb pgvector postgres pgvectorscale
+all: pg_duckdb
+endif
+ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
+all: pgtextsearch pgvectorscale
 endif
 
 ### postgres
@@ -102,14 +114,16 @@ $(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.toml: $(PGVECTORSCALE_DIR).tar.gz
 	touch $(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.toml
 
 $(INSTALL_PREFIX)/lib/vectorscale.so: $(PGVECTORSCALE_DIR)/pgvectorscale/Cargo.toml $(INSTALL_PREFIX)/bin/postgres
-ifneq ($(OS),Windows_NT)
+ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
 	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
 		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
 		&& cd $(PGVECTORSCALE_DIR)/pgvectorscale \
 		&& cargo pgrx init --pg17 $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
 		&& cargo pgrx install --release
-else
+else ifeq ($(OS),Windows_NT)
 	$(error pgvectorscale build is not supported on Windows due to cargo-pgrx issues)
+else
+	$(error pgvectorscale build is not supported on musl libc distributions (e.g., Alpine) due to cargo-pgrx issues)
 endif
 
 .PHONY: pgvectorscale
@@ -129,9 +143,15 @@ $(PGTEXTSEARCH_DIR)/Makefile: $(PGTEXTSEARCH_DIR).tar.gz
 	touch $(PGTEXTSEARCH_DIR)/Makefile
 
 $(INSTALL_PREFIX)/lib/pg_textsearch.so: $(PGTEXTSEARCH_DIR)/Makefile $(INSTALL_PREFIX)/bin/postgres
+ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
 	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
 		&& $(MAKE) -C $(PGTEXTSEARCH_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) -j \
 		&& $(MAKE) -C $(PGTEXTSEARCH_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) install
+else ifeq ($(OS),Windows_NT)
+	$(error pgtextsearch build is not supported on Windows due to cargo-pgrx issues)
+else
+	$(error pgtextsearch build is not supported on musl libc distributions (e.g., Alpine) due to cargo-pgrx issues)
+endif
 
 .PHONY: pgtextsearch
 pgtextsearch: postgres $(INSTALL_PREFIX)/lib/pg_textsearch.so
