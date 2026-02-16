@@ -1,0 +1,17 @@
+[project]
+name = "pgembed-pgvector"
+version = "0.1.8"
+description = "pgvector extension for pgembed"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["pgembed>=0.1.8"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[build-system]
+requires = ["setuptools>=58.0.0", "wheel"]
+build-backend = "setuptools.build_meta"

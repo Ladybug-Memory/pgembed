@@ -49,28 +49,25 @@ PostgreSQL binaries are available at `pgembed.POSTGRES_BIN_PATH` if you need dir
 
 ## Extensions
 
-pgembed supports optional PostgreSQL extensions. Install with the extensions you need:
+pgembed supports optional PostgreSQL extensions as separate packages. Install the extensions you need:
 
 ```bash
 # Base installation (PostgreSQL only)
 pip install pgembed
 
-# With specific extensions
-pip install pgembed[pgvector]
-pip install pgembed[pgvectorscale]
-pip install pgembed[pgtextsearch]
+# With specific extensions (separate wheels)
+pip install pgembed-pgvector
+pip install pgembed-pgvectorscale
+pip install pgembed-pgtextsearch
 
 # Multiple extensions
-pip install pgembed[pgvector,pgvectorscale,pgtextsearch]
-
-# All extensions
-pip install pgembed[all]
+pip install pgembed-pgvector pgembed-pgvectorscale pgembed-pgtextsearch
 ```
 
 Available extensions:
-- `pgvector`: Vector similarity search
-- `pgvectorscale`: High-performance vector storage (requires Rust)
-- `pgtextsearch`: BM25-based full-text search
+- `pgembed-pgvector`: Vector similarity search (works on all platforms)
+- `pgembed-pgvectorscale`: High-performance vector storage (requires Rust, not available on Alpine/Windows)
+- `pgembed-pgtextsearch`: BM25-based full-text search (requires Rust, not available on Alpine/Windows)
 
 ### Checking available extensions
 
@@ -86,6 +83,12 @@ if pgembed.has_extension('pgvector'):
     # Create the extension
     server.create_extension('vector')
 ```
+
+### Platform Support
+
+- **pgvector**: Works on Linux, macOS (Intel & Apple Silicon), Windows
+- **pgvectorscale**: Works on Linux, macOS (Intel & Apple Silicon). NOT available on Alpine Linux or Windows (requires Rust)
+- **pgtextsearch**: Works on Linux, macOS (Intel & Apple Silicon). NOT available on Alpine Linux or Windows (requires Rust)
 
 ### Building specific extensions
 

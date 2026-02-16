@@ -261,8 +261,7 @@ class PostgresServer:
             RuntimeError: If the extension is not available in the installation.
         """
         import pgembed
-        from pgembed import AVAILABLE_EXTENSIONS
-
+        from pgembed import AVAILABLE_EXTENSIONS, get_extension_create_name
         extension_map = {
             'vector': 'pgvector',
             'vectorscale': 'pgvectorscale',
@@ -276,8 +275,8 @@ class PostgresServer:
                 f"Extension '{extension_name}' is not available. "
                 f"Available extensions: {[k for k, v in AVAILABLE_EXTENSIONS.items() if v]}"
             )
-
-        return self.psql(f"CREATE EXTENSION IF NOT EXISTS {extension_name};")
+        create_name = get_extension_create_name(pkg_name)
+        return self.psql(f"CREATE EXTENSION IF NOT EXISTS {create_name};")
 
     def __enter__(self):
         self._count += 1
