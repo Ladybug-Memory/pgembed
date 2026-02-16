@@ -248,6 +248,37 @@ class PostgresServer:
                                          input=command.encode(), shell=True)
         return stdout.decode("utf-8")
 
+    def create_extension(self, extension_name: str) -> str:
+        """Create a PostgreSQL extension.
+
+        Args:
+            extension_name: Name of the extension to create (e.g., 'vector', 'pg_textsearch')
+
+        Returns:
+            The output from the CREATE EXTENSION command.
+
+        Raises:
+            RuntimeError: If the extension is not available in the installation.
+        """
+        import pgembed
+        from pgembed import AVAILABLE_EXTENSIONS
+
+        extension_map = {
+            'vector': 'pgvector',
+            'vectorscale': 'pgvectorscale',
+            'pg_textsearch': 'pgtextsearch',
+            'pg_duckdb': 'pg_duckdb',
+        }
+
+        pkg_name = extension_map.get(extension_name, extension_name)
+        if not pgembed.has_extension(pkg_name):
+            raise RuntimeError(
+                f"Extension '{extension_name}' is not available. "
+                f"Available extensions: {[k for k, v in AVAILABLE_EXTENSIONS.items() if v]}"
+            )
+
+        return self.psql(f"CREATE EXTENSION IF NOT EXISTS {extension_name};")
+
     def __enter__(self):
         self._count += 1
         return self
