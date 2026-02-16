@@ -18,7 +18,11 @@ else
 	RUST_EXTENSIONS_SUPPORTED := 1
 endif
 
+ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
 EXTENSIONS ?= pgvector pgvectorscale pgtextsearch
+else
+EXTENSIONS ?= pgvector
+endif
 ifneq ($(OS),Windows_NT)
 EXTENSIONS += pg_duckdb
 endif
