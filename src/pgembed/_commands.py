@@ -4,8 +4,27 @@ import subprocess
 from typing import Optional, List, Callable
 import logging
 import tempfile
+import importlib.util
 
-POSTGRES_BIN_PATH = Path(__file__).parent / "pginstall" / "bin"
+def _get_pkg_path():
+    spec = importlib.util.find_spec('pgembed')
+    if spec and spec.submodule_search_locations:
+        return Path(spec.submodule_search_locations[0])
+    return Path(__file__).parent
+
+_pkg_path = _get_pkg_path()
+POSTGRES_BIN_PATH = _pkg_path / "pginstall" / "bin"
+
+_postgres_binaries_available = POSTGRES_BIN_PATH.exists()
+
+if not _postgres_binaries_available:
+    import os
+    _logger = logging.getLogger('pgembed')
+    _logger.warning(
+        f"PostgreSQL binaries not found at {POSTGRES_BIN_PATH}. "
+        f"This is expected during development with editable install. "
+        f"Run 'make build' to build PostgreSQL binaries."
+    )
 
 _logger = logging.getLogger('pgembed')
 
@@ -60,6 +79,8 @@ def create_command_function(pg_exe_name : str) -> Callable:
 
 __all__ = []
 def _init():
+    if not _postgres_binaries_available:
+        return
     for path in POSTGRES_BIN_PATH.iterdir():
         exe_name = path.name
         prog = create_command_function(exe_name)
