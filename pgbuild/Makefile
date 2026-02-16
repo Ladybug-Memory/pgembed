@@ -18,14 +18,19 @@ else
 	RUST_EXTENSIONS_SUPPORTED := 1
 endif
 
-.PHONY: all
-all: pgvector postgres
+EXTENSIONS ?= pgvector pgvectorscale pgtextsearch
 ifneq ($(OS),Windows_NT)
-all: pg_duckdb
+EXTENSIONS += pg_duckdb
 endif
-ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
-all: pgtextsearch pgvectorscale
-endif
+
+.PHONY: all
+all: postgres $(EXTENSIONS)
+
+.PHONY: pgvector pgvectorscale pgtextsearch pg_duckdb
+pgvector: postgres $(INSTALL_PREFIX)/lib/vector.so
+pgvectorscale: postgres $(INSTALL_PREFIX)/lib/vectorscale.so
+pgtextsearch: postgres $(INSTALL_PREFIX)/lib/pg_textsearch.so
+pg_duckdb: postgres $(INSTALL_PREFIX)/lib/pg_duckdb.so
 
 ### postgres
 POSTGRES_VERSION := 17-stable
@@ -76,9 +81,6 @@ $(INSTALL_PREFIX)/lib/vector.so: $(PGVECTOR_DIR)/Makefile $(INSTALL_PREFIX)/bin/
 		&& $(MAKE) -C $(PGVECTOR_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) -j \
 		&& $(MAKE) -C $(PGVECTOR_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) install
 
-.PHONY: pgvector
-pgvector: postgres $(INSTALL_PREFIX)/lib/vector.so
-
 ### pg_duckdb
 PG_DUCKDB_TAG := v1.1.1
 PG_DUCKDB_REPO := https://github.com/duckdb/pg_duckdb
@@ -96,9 +98,6 @@ ifneq ($(OS),Windows_NT)
 else
 	$(error pg_duckdb build is not supported on Windows due to cargo-pgrx issues)
 endif
-
-.PHONY: pg_duckdb
-pg_duckdb: postgres $(INSTALL_PREFIX)/lib/pg_duckdb.so
 
 ### pgvectorscale
 PGVECTORSCALE_TAG := 0.5.1
@@ -126,9 +125,6 @@ else
 	$(error pgvectorscale build is not supported on musl libc distributions (e.g., Alpine) due to cargo-pgrx issues)
 endif
 
-.PHONY: pgvectorscale
-pgvectorscale: postgres $(INSTALL_PREFIX)/lib/vectorscale.so
-
 ### pgtextsearch
 PGTEXTSEARCH_TAG := v0.5.0
 PGTEXTSEARCH_URL := https://github.com/timescale/pg_textsearch/archive/refs/tags/$(PGTEXTSEARCH_TAG).tar.gz
@@ -152,9 +148,6 @@ else ifeq ($(OS),Windows_NT)
 else
 	$(error pgtextsearch build is not supported on musl libc distributions (e.g., Alpine) due to cargo-pgrx issues)
 endif
-
-.PHONY: pgtextsearch
-pgtextsearch: postgres $(INSTALL_PREFIX)/lib/pg_textsearch.so
 
 ### other
 .PHONY: clean clean-all

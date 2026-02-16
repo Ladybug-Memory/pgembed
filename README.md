@@ -47,6 +47,64 @@ pgembed.get_server("/path/to/my/data/dir")
 
 PostgreSQL binaries are available at `pgembed.POSTGRES_BIN_PATH` if you need direct access to tools like `initdb`, `pg_ctl`, `psql`, or `pg_config`.
 
+## Extensions
+
+pgembed supports optional PostgreSQL extensions. Install with the extensions you need:
+
+```bash
+# Base installation (PostgreSQL only)
+pip install pgembed
+
+# With specific extensions
+pip install pgembed[pgvector]
+pip install pgembed[pgvectorscale]
+pip install pgembed[pgtextsearch]
+
+# Multiple extensions
+pip install pgembed[pgvector,pgvectorscale,pgtextsearch]
+
+# All extensions
+pip install pgembed[all]
+```
+
+Available extensions:
+- `pgvector`: Vector similarity search
+- `pgvectorscale`: High-performance vector storage (requires Rust)
+- `pgtextsearch`: BM25-based full-text search
+
+### Checking available extensions
+
+```python
+import pgembed
+
+# Check which extensions are available
+print(pgembed.list_extensions())
+# {'pgvector': True, 'pgvectorscale': True, 'pgtextsearch': False, 'pg_duckdb': True}
+
+# Check if a specific extension is available
+if pgembed.has_extension('pgvector'):
+    # Create the extension
+    server.create_extension('vector')
+```
+
+### Building specific extensions
+
+To build only specific extensions:
+
+```bash
+# Build only pgvector
+make pgvector
+
+# Build only pgvectorscale
+make pgvectorscale
+
+# Build only pgtextsearch
+make pgtextsearch
+
+# Build specific combination
+make EXTENSIONS="pgvector pgtextsearch" all
+```
+
 ## History
 
 pgembed is a fork of [pgserver](https://github.com/orm011/pgserver), which was inspired by [postgresql-wheel](https://github.com/michelp/postgresql-wheel). While those projects focused primarily on Linux wheels, pgembed extends the approach with:

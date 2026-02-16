@@ -24,6 +24,10 @@ test = [
     "sqlalchemy>=2",
     "sqlalchemy-utils"
 ]
+pgvector = []
+pgvectorscale = []
+pgtextsearch = []
+all = ["pgembed[pgvector,pgvectorscale,pgtextsearch]"]
 
 [tool.setuptools.packages.find]
 where = ["src"]  # list of folders that contain the packages (["."] by default)
