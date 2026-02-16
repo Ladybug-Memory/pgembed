@@ -9,13 +9,24 @@ import platform
 import psutil
 import time
 
-from ._commands import POSTGRES_BIN_PATH, initdb, pg_ctl
+from . import _commands
+from ._commands import POSTGRES_BIN_PATH
 from .utils import find_suitable_port, find_suitable_socket_dir, DiskList, PostmasterInfo, process_is_running
 
 if platform.system() != 'Windows':
     from .utils import ensure_user_exists, ensure_prefix_permissions, ensure_folder_permissions
 
 _logger = logging.getLogger('pgembed')
+
+def _get_command(name: str):
+    cmd = getattr(_commands, name, None)
+    if cmd is None:
+        raise RuntimeError(
+            f"PostgreSQL binaries not available. "
+            f"pgembed was installed without PostgreSQL binaries or they were not built. "
+            f"Run 'make build' in the pgembed source directory."
+        )
+    return cmd
 
 class PostgresServer:
     """ Provides a common interface for interacting with a server.
@@ -125,6 +136,7 @@ class PostgresServer:
                             proc.kill()
                         assert not proc.is_running()
 
+            initdb = _get_command('initdb')
             initdb(['--auth=trust', '--auth-local=trust', '--encoding=utf8', '-U', self.postgres_user], pgdata=self.pgdata,
                     user=self.system_user)
         else:
@@ -173,6 +185,7 @@ class PostgresServer:
 
             try:
                 _logger.info(f"running pg_ctl... {pg_ctl_args=}")
+                pg_ctl = _get_command('pg_ctl')
                 pg_ctl(pg_ctl_args,pgdata=self.pgdata, user=self.system_user, timeout=10)
             except subprocess.CalledProcessError as err:
                 _logger.error(f"Failed to start server.\nShowing contents of postgres server log ({self.log.absolute()}) below:\n{self.log.read_text()}")
@@ -217,6 +230,7 @@ class PostgresServer:
             if self._postmaster_info is not None:
                 if self._postmaster_info.process.is_running():
                     try:
+                        pg_ctl = _get_command('pg_ctl')
                         pg_ctl(['-w', 'stop'], pgdata=self.pgdata, user=self.system_user)
                         stopped = True
                     except subprocess.CalledProcessError:

@@ -3,10 +3,17 @@ from .postgres_server import PostgresServer, get_server
 from pathlib import Path
 from typing import Optional
 import logging
+import importlib.util
 
 _logger = logging.getLogger('pgembed')
 
-EXTENSION_LIB_PATH = Path(__file__).parent / "pginstall" / "lib"
+def _get_pkg_path():
+    spec = importlib.util.find_spec('pgembed')
+    if spec and spec.submodule_search_locations:
+        return Path(spec.submodule_search_locations[0])
+    return Path(__file__).parent
+
+EXTENSION_LIB_PATH = _get_pkg_path() / "pginstall" / "lib"
 EXTENSION_POSTGRES_LIB_PATH = EXTENSION_LIB_PATH / "postgresql"
 
 AVAILABLE_EXTENSIONS = {}
