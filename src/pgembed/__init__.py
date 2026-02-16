@@ -1,11 +1,13 @@
 from ._commands import *
 from .postgres_server import PostgresServer, get_server
 from pathlib import Path
+from typing import Optional
 import logging
 
 _logger = logging.getLogger('pgembed')
 
 EXTENSION_LIB_PATH = Path(__file__).parent / "pginstall" / "lib"
+EXTENSION_POSTGRES_LIB_PATH = EXTENSION_LIB_PATH / "postgresql"
 
 AVAILABLE_EXTENSIONS = {}
 
@@ -17,7 +19,7 @@ EXTENSION_PACKAGES = {
 
 EXTENSION_SO_FILES = {
     'pgvector': 'vector.so',
-    'pgvectorscale': 'vectorscale.so',
+    'pgvectorscale': 'vectorscale-0.5.1.so',
     'pgtextsearch': 'pg_textsearch.so',
     'pg_duckdb': 'pg_duckdb.so',
 }
@@ -37,11 +39,14 @@ def _detect_extensions():
             pass
 
         so_file = EXTENSION_SO_FILES.get(name)
-        if so_file and (EXTENSION_LIB_PATH / so_file).exists():
-            AVAILABLE_EXTENSIONS[name] = True
-            _logger.info(f"Detected extension from bundled lib: {name}")
-        else:
-            AVAILABLE_EXTENSIONS[name] = False
+        if so_file:
+            bundled_path = EXTENSION_POSTGRES_LIB_PATH / so_file
+            if bundled_path.exists():
+                AVAILABLE_EXTENSIONS[name] = True
+                _logger.info(f"Detected extension from bundled lib: {name}")
+                continue
+
+        AVAILABLE_EXTENSIONS[name] = False
 
 def has_extension(name: str) -> bool:
     """Check if a specific extension is available.
@@ -78,5 +83,32 @@ def get_extension_create_name(name: str) -> str:
         'pg_duckdb': 'pg_duckdb',
     }
     return create_names.get(name, name)
+
+def get_extension_path(name: str) -> Optional[Path]:
+    """Get the path to an extension .so file.
+
+    Args:
+        name: Extension name (e.g., 'pgvector', 'pgtextsearch')
+
+    Returns:
+        Path to the .so file, or None if not available.
+    """
+    pkg_name = EXTENSION_PACKAGES.get(name)
+    if pkg_name:
+        try:
+            ext_pkg = __import__(pkg_name)
+            ext_path = ext_pkg.get_extension_path()
+            if ext_path:
+                return ext_path
+        except ImportError:
+            pass
+
+    so_file = EXTENSION_SO_FILES.get(name)
+    if so_file:
+        bundled_path = EXTENSION_POSTGRES_LIB_PATH / so_file
+        if bundled_path.exists():
+            return bundled_path
+
+    return None
 
 _detect_extensions()
