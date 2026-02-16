@@ -14,7 +14,7 @@ def get_extension_path():
     try:
         import pgembed
         base_lib = pgembed.EXTENSION_LIB_PATH
-        bundled = base_lib / EXTENSION_SO
+        bundled = base_lib / "postgresql" / EXTENSION_SO
         if bundled.exists():
             return bundled
     except ImportError:
@@ -22,13 +22,19 @@ def get_extension_path():
 
     return None
 
-def get_pg_lib_path():
-    import subprocess
+def get_extension_share_path():
+    from pathlib import Path
     try:
-        result = subprocess.run(
-            ['pg_config', '--pkglibdir'],
-            capture_output=True, text=True, check=True
-        )
-        return result.stdout.strip()
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        return None
+        import pgembed
+        base_share = Path(__file__).parent / "pginstall" / "share" / "postgresql" / "extension"
+        control_file = base_share / f"{EXTENSION_NAME}.control"
+        if control_file.exists():
+            return base_share
+
+        base_share = pgembed.EXTENSION_LIB_PATH.parent / "share" / "postgresql" / "extension"
+        control_file = base_share / f"{EXTENSION_NAME}.control"
+        if control_file.exists():
+            return base_share
+    except ImportError:
+        pass
+    return None
