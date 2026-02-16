@@ -35,7 +35,6 @@ testpaths = ["tests"]
 [tool.cibuildwheel]
 test-extras = "test"
 test-command = "bash -x {project}/cibuildwheel_test.bash {project}"
-manylinux-packages = []
 
 [build-system]
 # These are the assumed default build requirements from pip:
