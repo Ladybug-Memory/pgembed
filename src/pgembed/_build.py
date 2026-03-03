@@ -3,6 +3,7 @@ dummy module used in setup()
 seems needed to cause the binaries to be well formed
 The build is done by the Makefile
 """
+
 from cffi import FFI
 
 ffibuilder = FFI()

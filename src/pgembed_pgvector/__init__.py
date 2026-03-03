@@ -4,8 +4,10 @@ EXTENSION_NAME = "pgvector"
 EXTENSION_SO = "vector.so"
 EXTENSION_CREATE = "vector"
 
+
 def get_extension_path():
     from pathlib import Path
+
     pkg_dir = Path(__file__).parent
     so_path = pkg_dir / EXTENSION_SO
     if so_path.exists():
@@ -13,6 +15,7 @@ def get_extension_path():
 
     try:
         import pgembed
+
         base_lib = pgembed.EXTENSION_LIB_PATH
         bundled = base_lib / "postgresql" / EXTENSION_SO
         if bundled.exists():
@@ -22,16 +25,23 @@ def get_extension_path():
 
     return None
 
+
 def get_extension_share_path():
     from pathlib import Path
+
     try:
         import pgembed
-        base_share = Path(__file__).parent / "pginstall" / "share" / "postgresql" / "extension"
+
+        base_share = (
+            Path(__file__).parent / "pginstall" / "share" / "postgresql" / "extension"
+        )
         control_file = base_share / f"{EXTENSION_NAME}.control"
         if control_file.exists():
             return base_share
 
-        base_share = pgembed.EXTENSION_LIB_PATH.parent / "share" / "postgresql" / "extension"
+        base_share = (
+            pgembed.EXTENSION_LIB_PATH.parent / "share" / "postgresql" / "extension"
+        )
         control_file = base_share / f"{EXTENSION_NAME}.control"
         if control_file.exists():
             return base_share
