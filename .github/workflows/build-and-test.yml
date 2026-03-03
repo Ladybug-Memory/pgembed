@@ -195,6 +195,7 @@ jobs:
           overwrite: true
   build_wheels_pgsearch:
     name: Build pg_search on ${{ matrix.os }}-${{ matrix.arch }}
+    needs: build_wheels
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -224,6 +225,13 @@ jobs:
             src/pgembed/pginstall
           key: ${{ runner.os }}-${{ runner.arch }}-build-${{ env.cache-name }}-${{
             hashFiles('Makefile', 'pgbuild/Makefile', '.github/workflows/build-and-test.yml') }}
+      - name: Verify pg_config is available
+        run: |
+          if [ ! -f "src/pgembed/pginstall/bin/pg_config" ]; then
+            echo "ERROR: pg_config not found in cache. The base postgres build may have failed."
+            exit 1
+          fi
+          echo "pg_config found at: $(src/pgembed/pginstall/bin/pg_config --version)"
       - name: Install Rust
         run: |
           rustup install 1.88.0
