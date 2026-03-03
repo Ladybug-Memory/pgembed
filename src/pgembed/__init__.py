@@ -30,21 +30,32 @@ EXTENSION_SO_FILES = {
     "pgvector": "vector.so",
     "pgvectorscale": "vectorscale-0.5.1.so",
     "pgtextsearch": "pg_textsearch.so",
+    "pg_search": "pg_search.so",
     "pg_duckdb": "pg_duckdb.so",
 }
+
+EXTENSION_NAMES = (
+    "pgvector",
+    "pgvectorscale",
+    "pgtextsearch",
+    "pg_search",
+    "pg_duckdb",
+)
 
 
 def _detect_extensions():
     global AVAILABLE_EXTENSIONS
 
-    for name, pkg_name in EXTENSION_PACKAGES.items():
+    for name in EXTENSION_NAMES:
+        pkg_name = EXTENSION_PACKAGES.get(name)
         try:
-            ext_pkg = __import__(pkg_name)
-            ext_path = ext_pkg.get_extension_path()
-            if ext_path and ext_path.exists():
-                AVAILABLE_EXTENSIONS[name] = True
-                _logger.info(f"Detected extension from package {pkg_name}: {name}")
-                continue
+            if pkg_name:
+                ext_pkg = __import__(pkg_name)
+                ext_path = ext_pkg.get_extension_path()
+                if ext_path and ext_path.exists():
+                    AVAILABLE_EXTENSIONS[name] = True
+                    _logger.info(f"Detected extension from package {pkg_name}: {name}")
+                    continue
         except ImportError:
             pass
 
@@ -63,7 +74,7 @@ def has_extension(name: str) -> bool:
     """Check if a specific extension is available.
 
     Args:
-        name: Extension name (e.g., 'pgvector', 'pgvectorscale', 'pgtextsearch', 'pg_duckdb')
+        name: Extension name (e.g., 'pgvector', 'pgvectorscale', 'pgtextsearch', 'pg_search', 'pg_duckdb')
 
     Returns:
         True if the extension is available, False otherwise.
@@ -93,6 +104,7 @@ def get_extension_create_name(name: str) -> str:
         "pgvector": "vector",
         "pgvectorscale": "vectorscale",
         "pgtextsearch": "pg_textsearch",
+        "pg_search": "pg_search",
         "pg_duckdb": "pg_duckdb",
     }
     return create_names.get(name, name)

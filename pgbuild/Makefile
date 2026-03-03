@@ -19,7 +19,7 @@ else
 endif
 
 ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
-EXTENSIONS ?= pgvector pgvectorscale pgtextsearch
+EXTENSIONS ?= pgvector pgvectorscale pgtextsearch pg_search
 else
 EXTENSIONS ?= pgvector
 endif
@@ -30,10 +30,11 @@ endif
 .PHONY: all
 all: postgres $(EXTENSIONS)
 
-.PHONY: pgvector pgvectorscale pgtextsearch pg_duckdb
+.PHONY: pgvector pgvectorscale pgtextsearch pg_search pg_duckdb
 pgvector: postgres $(INSTALL_PREFIX)/lib/vector.so
 pgvectorscale: postgres $(INSTALL_PREFIX)/lib/vectorscale.so
 pgtextsearch: postgres $(INSTALL_PREFIX)/lib/pg_textsearch.so
+pg_search: postgres $(INSTALL_PREFIX)/lib/pg_search.so
 pg_duckdb: postgres $(INSTALL_PREFIX)/lib/pg_duckdb.so
 
 ### postgres
@@ -153,6 +154,33 @@ else
 	$(error pgtextsearch build is not supported on musl libc distributions (e.g., Alpine) due to cargo-pgrx issues)
 endif
 
+### pg_search
+PGSEARCH_TAG ?= v0.21.10
+PGSEARCH_URL := https://github.com/paradedb/paradedb/archive/refs/tags/$(PGSEARCH_TAG).tar.gz
+PGSEARCH_DIR := paradedb-$(PGSEARCH_TAG)
+PGSEARCH_SUBDIR := $(PGSEARCH_DIR)/pg_search
+
+$(PGSEARCH_DIR).tar.gz:
+	curl -L -o $(PGSEARCH_DIR).tar.gz $(PGSEARCH_URL)
+
+$(PGSEARCH_SUBDIR)/Cargo.toml: $(PGSEARCH_DIR).tar.gz
+	mkdir -p $(PGSEARCH_DIR)
+	tar xzf $(PGSEARCH_DIR).tar.gz -C $(PGSEARCH_DIR) --strip-components=1
+	touch $(PGSEARCH_SUBDIR)/Cargo.toml
+
+$(INSTALL_PREFIX)/lib/pg_search.so: $(PGSEARCH_SUBDIR)/Cargo.toml $(INSTALL_PREFIX)/bin/postgres
+ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
+	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
+		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
+		&& cd $(PGSEARCH_SUBDIR) \
+		&& cargo pgrx init --pg17 $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
+		&& cargo pgrx install --release
+else ifeq ($(OS),Windows_NT)
+	$(error pg_search build is not supported on Windows due to cargo-pgrx issues)
+else
+	$(error pg_search build is not supported on musl libc distributions (e.g., Alpine) due to cargo-pgrx issues)
+endif
+
 ### other
 .PHONY: clean clean-all
 clean:
@@ -163,6 +191,7 @@ clean:
 	rm -rf $(PGVECTORSCALE_DIR)
 	rm -rf $(PG_DUCKDB_DIR)
 	rm -rf $(PGTEXTSEARCH_DIR)
+	rm -rf $(PGSEARCH_DIR)
 
 clean-all: clean
 	rm -rf *.tar.gz

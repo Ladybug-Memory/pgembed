@@ -330,6 +330,7 @@ class PostgresServer:
             "vector": "pgvector",
             "vectorscale": "pgvectorscale",
             "pg_textsearch": "pgtextsearch",
+            "pg_search": "pg_search",
             "pg_duckdb": "pg_duckdb",
         }
 
