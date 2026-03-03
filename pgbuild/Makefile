@@ -24,7 +24,7 @@ else
 EXTENSIONS ?= pgvector
 endif
 ifneq ($(OS),Windows_NT)
-EXTENSIONS += pg_duckdb
+EXTENSIONS ?= $(EXTENSIONS) pg_duckdb
 endif
 
 .PHONY: all
