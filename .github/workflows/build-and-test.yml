@@ -120,7 +120,7 @@ jobs:
             export PATH="$INSTALL_BIN:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH"
             export LDFLAGS="-L/opt/homebrew/lib -lssl -lcrypto"
             export IS_MUSL=0
-            cargo install cargo-pgrx --locked
+            cargo install cargo-pgrx --version 0.12.5 --locked
           elif [ "${{ matrix.os }}" = "windows-2022" ]; then
             export PATH="$INSTALL_BIN:$USERPROFILE/.cargo/bin:C:\ProgramData\chocolatey\lib\ccache\tools\ccache-${{ matrix.arch }}-windows:$PATH"
             export IS_MUSL=0
@@ -156,8 +156,8 @@ jobs:
           CIBW_BEFORE_ALL_MACOS: |
             brew install jq llvm cmake ninja lz4 openssl
             export IS_MUSL=0
-            # Build base extensions with default cargo-pgrx
-            cargo install cargo-pgrx --locked
+            # Build base extensions with cargo-pgrx 0.12.5
+            cargo install cargo-pgrx --version 0.12.5 --locked
             make
             # Switch to cargo-pgrx 0.16.1 for pg_search
             cargo uninstall cargo-pgrx || true
