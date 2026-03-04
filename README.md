@@ -1,4 +1,4 @@
-![Python Version](https://img.shields.io/badge/python-3.10%2C%203.11%2C%203.12%2C%203.13%2C%203.14-blue)
+![Python Version](https://img.shields.io/badge/python-3.12%2C%203.13%2C%203.14-blue)
 ![Postgres Version](https://img.shields.io/badge/PostgreSQL-17-blue)
 
 ![Linux Support](https://img.shields.io/badge/Linux%20Support-manylinux%2C%20alpine%2C%20x64/arm64-green)
