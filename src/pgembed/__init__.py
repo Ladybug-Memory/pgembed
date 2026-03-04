@@ -5,13 +5,15 @@ from typing import Optional
 import logging
 import importlib.util
 
-_logger = logging.getLogger('pgembed')
+_logger = logging.getLogger("pgembed")
+
 
 def _get_pkg_path():
-    spec = importlib.util.find_spec('pgembed')
+    spec = importlib.util.find_spec("pgembed")
     if spec and spec.submodule_search_locations:
         return Path(spec.submodule_search_locations[0])
     return Path(__file__).parent
+
 
 EXTENSION_LIB_PATH = _get_pkg_path() / "pginstall" / "lib"
 EXTENSION_POSTGRES_LIB_PATH = EXTENSION_LIB_PATH / "postgresql"
@@ -19,29 +21,41 @@ EXTENSION_POSTGRES_LIB_PATH = EXTENSION_LIB_PATH / "postgresql"
 AVAILABLE_EXTENSIONS = {}
 
 EXTENSION_PACKAGES = {
-    'pgvector': 'pgembed_pgvector',
-    'pgvectorscale': 'pgembed_pgvectorscale',
-    'pgtextsearch': 'pgembed_pgtextsearch',
+    "pgvector": "pgembed_pgvector",
+    "pgvectorscale": "pgembed_pgvectorscale",
+    "pgtextsearch": "pgembed_pgtextsearch",
 }
 
 EXTENSION_SO_FILES = {
-    'pgvector': 'vector.so',
-    'pgvectorscale': 'vectorscale-0.5.1.so',
-    'pgtextsearch': 'pg_textsearch.so',
-    'pg_duckdb': 'pg_duckdb.so',
+    "pgvector": "vector.so",
+    "pgvectorscale": "vectorscale-0.5.1.so",
+    "pgtextsearch": "pg_textsearch.so",
+    "pg_search": "pg_search.so",
+    "pg_duckdb": "pg_duckdb.so",
 }
+
+EXTENSION_NAMES = (
+    "pgvector",
+    "pgvectorscale",
+    "pgtextsearch",
+    "pg_search",
+    "pg_duckdb",
+)
+
 
 def _detect_extensions():
     global AVAILABLE_EXTENSIONS
 
-    for name, pkg_name in EXTENSION_PACKAGES.items():
+    for name in EXTENSION_NAMES:
+        pkg_name = EXTENSION_PACKAGES.get(name)
         try:
-            ext_pkg = __import__(pkg_name)
-            ext_path = ext_pkg.get_extension_path()
-            if ext_path and ext_path.exists():
-                AVAILABLE_EXTENSIONS[name] = True
-                _logger.info(f"Detected extension from package {pkg_name}: {name}")
-                continue
+            if pkg_name:
+                ext_pkg = __import__(pkg_name)
+                ext_path = ext_pkg.get_extension_path()
+                if ext_path and ext_path.exists():
+                    AVAILABLE_EXTENSIONS[name] = True
+                    _logger.info(f"Detected extension from package {pkg_name}: {name}")
+                    continue
         except ImportError:
             pass
 
@@ -55,16 +69,18 @@ def _detect_extensions():
 
         AVAILABLE_EXTENSIONS[name] = False
 
+
 def has_extension(name: str) -> bool:
     """Check if a specific extension is available.
 
     Args:
-        name: Extension name (e.g., 'pgvector', 'pgvectorscale', 'pgtextsearch', 'pg_duckdb')
+        name: Extension name (e.g., 'pgvector', 'pgvectorscale', 'pgtextsearch', 'pg_search', 'pg_duckdb')
 
     Returns:
         True if the extension is available, False otherwise.
     """
     return AVAILABLE_EXTENSIONS.get(name, False)
+
 
 def list_extensions() -> dict:
     """Return a dictionary of available extensions.
@@ -73,6 +89,7 @@ def list_extensions() -> dict:
         Dict mapping extension names to availability (True/False)
     """
     return AVAILABLE_EXTENSIONS.copy()
+
 
 def get_extension_create_name(name: str) -> str:
     """Get the SQL extension creation name for an extension.
@@ -84,12 +101,14 @@ def get_extension_create_name(name: str) -> str:
         The SQL name to use when creating the extension.
     """
     create_names = {
-        'pgvector': 'vector',
-        'pgvectorscale': 'vectorscale',
-        'pgtextsearch': 'pg_textsearch',
-        'pg_duckdb': 'pg_duckdb',
+        "pgvector": "vector",
+        "pgvectorscale": "vectorscale",
+        "pgtextsearch": "pg_textsearch",
+        "pg_search": "pg_search",
+        "pg_duckdb": "pg_duckdb",
     }
     return create_names.get(name, name)
+
 
 def get_extension_path(name: str) -> Optional[Path]:
     """Get the path to an extension .so file.
@@ -117,5 +136,6 @@ def get_extension_path(name: str) -> Optional[Path]:
             return bundled_path
 
     return None
+
 
 _detect_extensions()
