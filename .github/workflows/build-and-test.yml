@@ -311,6 +311,10 @@ jobs:
               export RUSTFLAGS="-C target-feature=+avx2,+fma"
             fi
             make EXTENSIONS=pg_search
+          CIBW_BEFORE_ALL_MACOS: |
+            brew install jq llvm cmake ninja lz4 openssl
+            export IS_MUSL=0
+            make EXTENSIONS=pg_search
           CIBW_ENVIRONMENT_LINUX: PATH="$HOME/.cargo/bin:$PATH:/project/src/pgembed/pginstall/bin" EXTENSIONS=pg_search
           CIBW_ENVIRONMENT_MUSLLINUX: LIBCLANG_STATIC_PATH=/usr/lib
           CIBW_ENVIRONMENT_MANYLINUX: LIBCLANG_PATH=/usr/lib64
