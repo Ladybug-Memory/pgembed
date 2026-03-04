@@ -27,6 +27,17 @@ ifneq ($(OS),Windows_NT)
 EXTENSIONS ?= $(EXTENSIONS) pg_duckdb
 endif
 
+REQUESTED_EXTENSIONS := $(strip $(EXTENSIONS))
+UNSUPPORTED_EXTENSIONS :=
+ifeq ($(IS_MUSL),1)
+UNSUPPORTED_EXTENSIONS += pgvectorscale pgtextsearch pg_search
+endif
+SKIPPED_EXTENSIONS := $(filter $(UNSUPPORTED_EXTENSIONS),$(REQUESTED_EXTENSIONS))
+ifneq ($(strip $(SKIPPED_EXTENSIONS)),)
+$(warning Skipping unsupported extensions on this platform: $(sort $(SKIPPED_EXTENSIONS)))
+endif
+EXTENSIONS := $(filter-out $(UNSUPPORTED_EXTENSIONS),$(REQUESTED_EXTENSIONS))
+
 .PHONY: all
 all: postgres $(EXTENSIONS)
 
