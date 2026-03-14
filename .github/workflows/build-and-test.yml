@@ -120,7 +120,7 @@ jobs:
             export PATH="$INSTALL_BIN:$HOME/.cargo/bin:/opt/homebrew/opt/ccache/bin:$PATH"
             export LDFLAGS="-L/opt/homebrew/lib -lssl -lcrypto"
             export IS_MUSL=0
-            cargo install cargo-pgrx --version 0.12.5 --locked
+            cargo install cargo-pgrx --version 0.16.1 --locked
           elif [ "${{ matrix.os }}" = "windows-2022" ]; then
             export PATH="$INSTALL_BIN:$USERPROFILE/.cargo/bin:C:\ProgramData\chocolatey\lib\ccache\tools\ccache-${{ matrix.arch }}-windows:$PATH"
             export IS_MUSL=0
@@ -146,22 +146,14 @@ jobs:
           CIBW_BEFORE_ALL_WINDOWS: |
             choco install llvm cmake ninja
             export IS_MUSL=0
-            # Build base extensions with cargo-pgrx 0.12.5
-            cargo install cargo-pgrx --version 0.12.5 --locked
-            make
-            # Remove cargo-pgrx 0.12.5 and install 0.16.1 for pg_search
-            cargo uninstall cargo-pgrx || true
             cargo install cargo-pgrx --version 0.16.1 --locked
+            make
             make EXTENSIONS=pg_search
           CIBW_BEFORE_ALL_MACOS: |
             brew install jq llvm cmake ninja lz4 openssl
             export IS_MUSL=0
-            # Build base extensions with cargo-pgrx 0.12.5
-            cargo install cargo-pgrx --version 0.12.5 --locked
-            make
-            # Switch to cargo-pgrx 0.16.1 for pg_search
-            cargo uninstall cargo-pgrx || true
             cargo install cargo-pgrx --version 0.16.1 --locked
+            make
             make EXTENSIONS=pg_search
           CIBW_BEFORE_ALL_LINUX: |
             set -e
@@ -179,8 +171,7 @@ jobs:
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.88.0
             export PATH="$HOME/.cargo/bin:/usr/lib/ccache:$PATH"
             rustup default 1.88.0
-            # Build base extensions with cargo-pgrx 0.12.5
-            cargo install cargo-pgrx --version 0.12.5 --locked
+            cargo install cargo-pgrx --version 0.16.1 --locked
             if command -v ldd &> /dev/null && ldd --version 2>&1 | grep -qi musl; then
               export IS_MUSL=1
             else
@@ -191,9 +182,6 @@ jobs:
             fi
             make
             if [ "$IS_MUSL" != "1" ]; then
-              # Remove cargo-pgrx 0.12.5 and install 0.16.1 for pg_search
-              cargo uninstall cargo-pgrx || true
-              cargo install cargo-pgrx --version 0.16.1 --locked
               make EXTENSIONS=pg_search
             else
               echo "Skipping pg_search build on musl libc"
