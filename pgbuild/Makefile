@@ -19,7 +19,7 @@ else
 endif
 
 ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
-EXTENSIONS ?= pgvector pgvectorscale pgtextsearch
+EXTENSIONS ?= pgvector pgvectorscale pgtextsearch vectorchord
 else
 EXTENSIONS ?= pgvector
 endif
@@ -30,7 +30,7 @@ endif
 REQUESTED_EXTENSIONS := $(strip $(EXTENSIONS))
 UNSUPPORTED_EXTENSIONS :=
 ifeq ($(IS_MUSL),1)
-UNSUPPORTED_EXTENSIONS += pgvectorscale pgtextsearch pg_search
+UNSUPPORTED_EXTENSIONS += pgvectorscale pgtextsearch pg_search vectorchord
 endif
 SKIPPED_EXTENSIONS := $(filter $(UNSUPPORTED_EXTENSIONS),$(REQUESTED_EXTENSIONS))
 ifneq ($(strip $(SKIPPED_EXTENSIONS)),)
@@ -41,12 +41,13 @@ EXTENSIONS := $(filter-out $(UNSUPPORTED_EXTENSIONS),$(REQUESTED_EXTENSIONS))
 .PHONY: all
 all: postgres $(EXTENSIONS)
 
-.PHONY: pgvector pgvectorscale pgtextsearch pg_search pg_duckdb
+.PHONY: pgvector pgvectorscale pgtextsearch pg_search pg_duckdb vectorchord
 pgvector: postgres $(INSTALL_PREFIX)/lib/vector.so
 pgvectorscale: postgres $(INSTALL_PREFIX)/lib/vectorscale.so
 pgtextsearch: postgres $(INSTALL_PREFIX)/lib/pg_textsearch.so
 pg_search: postgres $(INSTALL_PREFIX)/lib/pg_search.so
 pg_duckdb: postgres $(INSTALL_PREFIX)/lib/pg_duckdb.so
+vectorchord: postgres $(INSTALL_PREFIX)/lib/vchord.so
 
 ### postgres
 POSTGRES_VERSION := 17-stable
@@ -192,6 +193,31 @@ else
 	$(error pg_search build is not supported on musl libc distributions (e.g., Alpine) due to cargo-pgrx issues)
 endif
 
+### vectorchord
+VECTORCHORD_TAG := 1.1.1
+VECTORCHORD_URL := https://github.com/tensorchord/VectorChord/archive/refs/tags/$(VECTORCHORD_TAG).tar.gz
+VECTORCHORD_DIR := vectorchord-$(VECTORCHORD_TAG)
+
+$(VECTORCHORD_DIR).tar.gz:
+	curl -L -o $(VECTORCHORD_DIR).tar.gz $(VECTORCHORD_URL)
+
+$(VECTORCHORD_DIR)/Makefile: $(VECTORCHORD_DIR).tar.gz
+	mkdir -p $(VECTORCHORD_DIR)
+	tar xzf $(VECTORCHORD_DIR).tar.gz -C $(VECTORCHORD_DIR) --strip-components=1
+	touch $(VECTORCHORD_DIR)/Makefile
+
+$(INSTALL_PREFIX)/lib/vchord.so: $(VECTORCHORD_DIR)/Makefile $(INSTALL_PREFIX)/bin/postgres
+ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
+	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
+		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
+		&& PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) $(MAKE) -C $(VECTORCHORD_DIR) build \
+		&& PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) $(MAKE) -C $(VECTORCHORD_DIR) install
+else ifeq ($(OS),Windows_NT)
+	$(error vectorchord build is not supported on Windows due to cargo-pgrx issues)
+else
+	$(error vectorchord build is not supported on musl libc distributions (e.g., Alpine) due to cargo-pgrx issues)
+endif
+
 ### other
 .PHONY: clean clean-all
 clean:
@@ -203,6 +229,7 @@ clean:
 	rm -rf $(PG_DUCKDB_DIR)
 	rm -rf $(PGTEXTSEARCH_DIR)
 	rm -rf $(PGSEARCH_DIR)
+	rm -rf $(VECTORCHORD_DIR)
 
 clean-all: clean
 	rm -rf *.tar.gz
