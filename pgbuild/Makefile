@@ -79,7 +79,7 @@ $(INSTALL_PREFIX)/bin/postgres: $(POSTGRES_BLD)/config.status
 postgres: $(INSTALL_PREFIX)/bin/postgres
 
 ### pgvector
-PGVECTOR_TAG := v0.8.1
+PGVECTOR_TAG := v0.8.2
 PGVECTOR_URL := https://github.com/pgvector/pgvector/archive/refs/tags/$(PGVECTOR_TAG).tar.gz
 PGVECTOR_DIR := pgvector-$(PGVECTOR_TAG)
 
@@ -116,7 +116,7 @@ else
 endif
 
 ### pgvectorscale
-PGVECTORSCALE_TAG := 0.5.1
+PGVECTORSCALE_TAG := 0.9.0
 PGVECTORSCALE_URL := https://github.com/timescale/pgvectorscale/archive/refs/tags/$(PGVECTORSCALE_TAG).tar.gz
 PGVECTORSCALE_DIR := pgvectorscale-$(PGVECTORSCALE_TAG)
 
@@ -142,7 +142,7 @@ else
 endif
 
 ### pgtextsearch
-PGTEXTSEARCH_TAG := v0.5.0
+PGTEXTSEARCH_TAG := v0.6.1
 PGTEXTSEARCH_URL := https://github.com/timescale/pg_textsearch/archive/refs/tags/$(PGTEXTSEARCH_TAG).tar.gz
 PGTEXTSEARCH_DIR := pgtextsearch-$(PGTEXTSEARCH_TAG)
 
@@ -166,7 +166,7 @@ else
 endif
 
 ### pg_search
-PGSEARCH_TAG ?= v0.21.10
+PGSEARCH_TAG ?= v0.21.14
 PGSEARCH_URL := https://github.com/paradedb/paradedb/archive/refs/tags/$(PGSEARCH_TAG).tar.gz
 PGSEARCH_DIR := paradedb-$(PGSEARCH_TAG)
 PGSEARCH_SUBDIR := $(PGSEARCH_DIR)/pg_search
