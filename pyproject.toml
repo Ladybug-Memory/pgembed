@@ -1,6 +1,6 @@
 [project]
 name = "pgembed" # Required
-version = "0.1.9"  # Required
+version = "0.2.0"  # Required
 description = "Self-contained postgres server for your python applications" # Required
 readme = "README.md" # Optional
 requires-python = ">=3.12"
