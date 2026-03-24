@@ -50,13 +50,13 @@ pg_duckdb: postgres $(INSTALL_PREFIX)/lib/pg_duckdb.so
 
 ### postgres
 POSTGRES_VERSION := 17-stable
-POSTGRES_SRC := REL_17_STABLE
+POSTGRES_SRC := patches17
 POSTGRES_BLD := $(POSTGRES_SRC)
 
 
 ## extract
 $(POSTGRES_SRC)/configure:
-	git clone https://github.com/postgres/postgres -b $(POSTGRES_SRC) --single-branch $(POSTGRES_SRC)
+	git clone https://github.com/orioledb/postgres/ -b $(POSTGRES_SRC) --single-branch $(POSTGRES_SRC)
 	touch $(POSTGRES_SRC)/configure
 
 ## configure
