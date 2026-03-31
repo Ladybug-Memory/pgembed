@@ -142,7 +142,7 @@ else
 endif
 
 ### pgtextsearch
-PGTEXTSEARCH_TAG := v0.6.1
+PGTEXTSEARCH_TAG := v1.0.0
 PGTEXTSEARCH_URL := https://github.com/timescale/pg_textsearch/archive/refs/tags/$(PGTEXTSEARCH_TAG).tar.gz
 PGTEXTSEARCH_DIR := pgtextsearch-$(PGTEXTSEARCH_TAG)
 
