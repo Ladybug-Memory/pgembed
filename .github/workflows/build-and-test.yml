@@ -88,8 +88,8 @@ jobs:
       - name: Install Rust
         if: matrix.os != 'ubuntu-latest'
         run: |
-          rustup install 1.88.0
-          rustup default 1.88.0
+          rustup install 1.89.0
+          rustup default 1.89.0
       - name: Install ccache
         if: matrix.os != 'ubuntu-latest'
         shell: bash
@@ -168,9 +168,9 @@ jobs:
               apt-get install -y ccache jq gcc libssl-dev llvm-dev clang-dev pkg-config
               apt-get install -y cmake ninja-build liblz4-dev libcurl4-openssl-dev libglib2.0-dev
             fi
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.88.0
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain 1.89.0
             export PATH="$HOME/.cargo/bin:/usr/lib/ccache:$PATH"
-            rustup default 1.88.0
+            rustup default 1.89.0
             cargo install cargo-pgrx --version 0.16.1 --locked
             if command -v ldd &> /dev/null && ldd --version 2>&1 | grep -qi musl; then
               export IS_MUSL=1
