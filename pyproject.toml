@@ -21,7 +21,7 @@ dev = [
 test = [
     "pytest",
     "psycopg2-binary",
-    "sqlalchemy>=2",
+    "sqlalchemy>=2,<2.1",
     "sqlalchemy-utils"
 ]
 
