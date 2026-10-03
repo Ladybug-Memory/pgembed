@@ -19,7 +19,7 @@ else
 endif
 
 ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
-EXTENSIONS ?= pgvector pgvectorscale pgtextsearch pgsql_http
+EXTENSIONS ?= pgvector pgvectorscale pgtextsearch 
 else
 EXTENSIONS ?= pgvector pgsql_http
 endif
