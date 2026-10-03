@@ -19,7 +19,7 @@ jobs:
           - runner: macos-latest
             os: macos-latest
             arch: arm64
-            deployment-target: '11.0'
+            deployment-target: '26.0'
             extensions: pgvector pgvectorscale pgtextsearch pg_duckdb pgsql_http
           - runner: ubuntu-latest
             os: ubuntu-latest
