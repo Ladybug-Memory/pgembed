@@ -135,7 +135,7 @@ ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
 		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
 		&& cd $(PGVECTORSCALE_DIR)/pgvectorscale \
 		&& cargo pgrx init --pg$(PG_MAJOR) $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
-		&& cargo pgrx install --release
+		&& cargo pgrx install --release --pg$(PG_MAJOR)
 else ifeq ($(OS),Windows_NT)
 	$(error pgvectorscale build is not supported on Windows due to cargo-pgrx issues)
 else
@@ -186,7 +186,7 @@ ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
 		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
 		&& cd $(PGSEARCH_SUBDIR) \
 		&& cargo pgrx init --pg$(PG_MAJOR) $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
-		&& cargo pgrx install --release
+		&& cargo pgrx install --release --pg$(PG_MAJOR)
 else ifeq ($(OS),Windows_NT)
 	$(error pg_search build is not supported on Windows due to cargo-pgrx issues)
 else
