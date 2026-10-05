@@ -58,15 +58,17 @@ pip install pgembed
 pip install pgembed-pgvector
 pip install pgembed-pgvectorscale
 pip install pgembed-pgtextsearch
+pip install pgembed-http
 
 # Multiple extensions
-pip install pgembed-pgvector pgembed-pgvectorscale pgembed-pgtextsearch
+pip install pgembed-pgvector pgembed-pgvectorscale pgembed-pgtextsearch pgembed-http
 ```
 
 Available extensions:
 - `pgembed-pgvector`: Vector similarity search (works on all platforms)
 - `pgembed-pgvectorscale`: High-performance vector storage (requires Rust, not available on Alpine/Windows)
 - `pgembed-pgtextsearch`: BM25-based full-text search (requires Rust, not available on Alpine/Windows)
+- `pgembed-http`: HTTP client (`http_get`, `http_post`, …) via pgsql-http (requires libcurl at build time)
 
 ### Checking available extensions
 
@@ -88,6 +90,7 @@ if pgembed.has_extension('pgvector'):
 - **pgvector**: Works on Linux, macOS (Intel & Apple Silicon), Windows
 - **pgvectorscale**: Works on Linux, macOS (Intel & Apple Silicon). NOT available on Alpine Linux or Windows (requires Rust)
 - **pgtextsearch**: Works on Linux, macOS (Intel & Apple Silicon). NOT available on Alpine Linux or Windows (requires Rust)
+- **pgembed-http**: Works on Linux, macOS (Intel & Apple Silicon). Requires libcurl dev headers at build time (`libcurl4-openssl-dev` on Debian/Ubuntu)
 
 ### Building specific extensions
 
@@ -102,6 +105,9 @@ make pgvectorscale
 
 # Build only pgtextsearch
 make pgtextsearch
+
+# Build only pgsql-http (for the pgembed-http split wheel)
+make EXTENSIONS="pgsql_http" all
 
 # Build specific combination
 make EXTENSIONS="pgvector pgtextsearch" all
