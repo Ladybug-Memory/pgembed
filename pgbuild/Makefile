@@ -49,8 +49,9 @@ pg_search: postgres $(INSTALL_PREFIX)/lib/pg_search.so
 pg_duckdb: postgres $(INSTALL_PREFIX)/lib/pg_duckdb.so
 
 ### postgres
-POSTGRES_VERSION := 17-stable
-POSTGRES_SRC := REL_17_STABLE
+# Major postgres version to build. Override from the command line or CI, e.g. `make PG_MAJOR=18`.
+PG_MAJOR ?= 17
+POSTGRES_SRC := REL_$(PG_MAJOR)_STABLE
 POSTGRES_BLD := $(POSTGRES_SRC)
 
 
@@ -133,7 +134,7 @@ ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
 	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
 		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
 		&& cd $(PGVECTORSCALE_DIR)/pgvectorscale \
-		&& cargo pgrx init --pg17 $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
+		&& cargo pgrx init --pg$(PG_MAJOR) $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
 		&& cargo pgrx install --release
 else ifeq ($(OS),Windows_NT)
 	$(error pgvectorscale build is not supported on Windows due to cargo-pgrx issues)
@@ -184,7 +185,7 @@ ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
 	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
 		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
 		&& cd $(PGSEARCH_SUBDIR) \
-		&& cargo pgrx init --pg17 $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
+		&& cargo pgrx init --pg$(PG_MAJOR) $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
 		&& cargo pgrx install --release
 else ifeq ($(OS),Windows_NT)
 	$(error pg_search build is not supported on Windows due to cargo-pgrx issues)
