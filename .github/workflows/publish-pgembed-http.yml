@@ -1,0 +1,181 @@
+# Build + publish the pgembed-http split wheel.
+#
+# Mirrors build-and-test.yml: same runners, same `make` invocation, same
+# trusted-publishing release action. The ONLY difference is EXTENSIONS:
+# base builds the default set, this builds pgsql_http. No PG_MAJOR is set
+# here on purpose — like base, it uses the pgbuild/Makefile default, so the
+# extension can never drift to a different Postgres major than the base wheel.
+#
+# One-time PyPI setup: register a *pending publisher* for project
+# `pgembed-http` with owner/repo = this repo, workflow filename =
+# `publish-pgembed-http.yml`, environment = `pypi`. The first tagged run
+# then creates the project on first upload.
+#
+# Release flow: bump src/pgembed_pgsql_http/pyproject.toml version, push tag
+# `pgembed-http-v<version>`. The workflow asserts tag == package version.
+name: Publish pgembed-http
+
+on:
+  push:
+    tags:
+      - "pgembed-http-v*"
+  pull_request:
+    paths:
+      - "src/pgembed_pgsql_http/**"
+      - "pgbuild/Makefile"
+      - "Makefile"
+      - ".github/workflows/publish-pgembed-http.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build pgembed-http on ${{ matrix.os }}-${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Same set as the base wheel matrix, minus Windows (pgsql-http's
+        # libcurl support there is unverified).
+        include:
+          - runner: macos-latest
+            os: macos-latest
+            arch: arm64
+            deployment-target: "11.0"
+          - runner: ubuntu-latest
+            os: ubuntu-latest
+            arch: x86_64
+            deployment-target: ""
+          - runner: ubuntu-24.04-arm
+            os: ubuntu-latest
+            arch: aarch64
+            deployment-target: ""
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.12"
+
+      - name: Check tag matches package version
+        if: startsWith(github.ref, 'refs/tags/pgembed-http-v')
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#pgembed-http-v}"
+          PKG_VERSION="$(grep '^version' src/pgembed_pgsql_http/pyproject.toml | sed 's/.*"\(.*\)".*/\1/')"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "tag version $TAG_VERSION != package version $PKG_VERSION"
+            exit 1
+          fi
+
+      # Reuse the base build cache when available: it holds a full postgres
+      # build from the same Makefile defaults, so `make EXTENSIONS=pgsql_http`
+      # below only needs to compile the http extension itself. Restore-only:
+      # this workflow must never clobber the base cache. Key replicates
+      # build-and-test.yml exactly for an exact-match hit.
+      - name: Restore postgres build from base cache
+        uses: actions/cache/restore@v3
+        with:
+          path: |
+            pgbuild
+            src/pgembed/pginstall
+          key: ${{ runner.os }}-${{ runner.arch }}-build-cache-postgres-${{
+            hashFiles('Makefile', 'pgbuild/Makefile', '.github/workflows/build-and-test.yml') }}
+
+      # Same install flavor as build-and-test.yml, trimmed to what a pure-C
+      # extension + postgres need (no Rust/cargo-pgrx: nothing pgrx-based here).
+      - name: Install build deps (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc make pkg-config bison flex \
+            libssl-dev zlib1g-dev libcurl4-openssl-dev
+
+      - name: Install build deps (macOS)
+        if: matrix.os == 'macos-latest'
+        run: brew install lz4
+        # libcurl headers come from the Xcode SDK; no brew curl on purpose —
+        # linking brewed libcurl would tie the .so to a Homebrew path that
+        # target machines may not have.
+
+      - name: Build postgres and pgsql_http
+        shell: bash
+        env:
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
+        run: |
+          # Same plain `make` as base (inherits PG_MAJOR default); only the
+          # extension set differs.
+          make EXTENSIONS=pgsql_http
+
+      - name: Stage binaries into the split package
+        shell: bash
+        run: |
+          BIN=src/pgembed/pginstall/bin
+          LIB="$("$BIN/pg_config" --pkglibdir)"
+          SHARE="$("$BIN/pg_config" --sharedir)/postgresql/extension"
+          ls "$LIB"/http.so "$SHARE"/http.control "$SHARE"/http--*.sql
+          cp "$LIB"/http.so src/pgembed_pgsql_http/pgembed_pgsql_http/
+          cp "$SHARE"/http.control "$SHARE"/http--*.sql src/pgembed_pgsql_http/pgembed_pgsql_http/
+          ls -la src/pgembed_pgsql_http/pgembed_pgsql_http/
+
+      - name: Build wheel
+        run: |
+          python -m pip install --upgrade pip build
+          cd src/pgembed_pgsql_http
+          python -m build
+          ls dist/
+          # setup.py forces a platform tag; a py3-none-any wheel here would
+          # mean the .so didn't get classified — fail loudly.
+          if ls dist/*-py3-none-any.whl >/dev/null 2>&1; then
+            echo "pure-Python wheel tag on a binary wheel — refusing"
+            exit 1
+          fi
+
+      - name: Smoke test (CREATE EXTENSION http)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "psycopg2-binary" "src/pgembed_pgsql_http/dist/"*.whl
+          python -m pip install pgembed
+          python - <<'EOF'
+          import tempfile
+          import pgembed
+          print(pgembed.list_extensions())
+          assert pgembed.has_extension("pgsql_http")
+          with pgembed.get_server(tempfile.mkdtemp(), cleanup_mode="delete") as pg:
+              out = pg.create_extension("http")
+              assert out.strip() == "CREATE EXTENSION", out
+              print(pg.psql("SELECT extversion FROM pg_extension WHERE extname='http';"))
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          path: src/pgembed_pgsql_http/dist/*
+          name: pgembed-http-${{ matrix.os }}-${{ matrix.arch }}
+          overwrite: true
+
+  publish-to-pypi:
+    # Same gate shape as base (any pgembed-http-v* tag).
+    if: startsWith(github.ref, 'refs/tags/pgembed-http-v')
+    name: Publish pgembed-http to PyPI
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pgembed-http
+    permissions:
+      id-token: write
+    steps:
+      - name: Download all the dists
+        uses: actions/download-artifact@v4
+        with:
+          pattern: pgembed-http-*
+          path: dist/
+          merge-multiple: true
+      - name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
