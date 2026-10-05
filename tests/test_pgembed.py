@@ -256,6 +256,12 @@ def test_pgvector(tmp_postgres):
     ret = tmp_postgres.psql("CREATE EXTENSION vector;")
     assert ret.strip() == "CREATE EXTENSION"
 
+def test_pgsql_http(tmp_postgres):
+    if not pgembed.has_extension("pgsql_http"):
+        pytest.skip("pgsql_http extension not available in this build")
+    ret = tmp_postgres.create_extension("http")
+    assert ret.strip() == "CREATE EXTENSION"
+
 def test_start_failure_log(caplog):
     """ Test server log contents are shown in python log when failures
     """
