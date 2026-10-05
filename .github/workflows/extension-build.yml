@@ -70,7 +70,9 @@ jobs:
       - name: Install build dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ccache bison flex gcc libssl-dev llvm-dev clang-dev pkg-config \
+          # NB: noble has no clang-dev/llvm-dev metapackages; libclang-dev provides
+          # the libclang that bindgen (via cargo-pgrx) needs.
+          sudo apt-get install -y ccache bison flex gcc libssl-dev clang libclang-dev pkg-config \
             cmake ninja-build liblz4-dev libcurl4-openssl-dev libglib2.0-dev libffi-dev jq
 
       - name: Install Rust toolchain
