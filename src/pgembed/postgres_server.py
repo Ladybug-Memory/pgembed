@@ -16,7 +16,6 @@ from .utils import (
     find_suitable_socket_dir,
     DiskList,
     PostmasterInfo,
-    process_is_running,
 )
 
 if platform.system() != "Windows":
@@ -33,9 +32,9 @@ def _get_command(name: str):
     cmd = getattr(_commands, name, None)
     if cmd is None:
         raise RuntimeError(
-            f"PostgreSQL binaries not available. "
-            f"pgembed was installed without PostgreSQL binaries or they were not built. "
-            f"Run 'make build' in the pgembed source directory."
+            "PostgreSQL binaries not available. "
+            "pgembed was installed without PostgreSQL binaries or they were not built. "
+            "Run 'make build' in the pgembed source directory."
         )
     return cmd
 
@@ -245,14 +244,14 @@ class PostgresServer:
                 # in Windows, when there is a postmaster.pid,  init_ctl seems to return
                 # but the file is not immediately updated, here we wait until the file shows
                 # a new running server. see test_stale_postmaster
-                _logger.info(f"waiting for postmaster info to show a running process")
+                _logger.info("waiting for postmaster info to show a running process")
                 pinfo = PostmasterInfo.read_from_pgdata(self.pgdata)
                 _logger.info(f"running... checking if ready {pinfo=}")
                 if pinfo is not None and pinfo.is_running() and pinfo.status == "ready":
                     self._postmaster_info = pinfo
                     break
 
-                _logger.info(f"not ready yet... waiting a bit more...")
+                _logger.info("not ready yet... waiting a bit more...")
                 time.sleep(1.0)
 
         _logger.info(f"Now asserting server is running {self._postmaster_info=}")
@@ -287,7 +286,7 @@ class PostgresServer:
                         pass  # somehow the server is already stopped.
 
                     if not stopped:
-                        _logger.warning(f"Failed to stop server, killing it instead.")
+                        _logger.warning("Failed to stop server, killing it instead.")
                         self._postmaster_info.process.terminate()
                         try:
                             self._postmaster_info.process.wait(2)

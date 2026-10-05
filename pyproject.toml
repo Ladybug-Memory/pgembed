@@ -18,10 +18,13 @@ dependencies = [
 dev = [
     "sysv_ipc",
 ]
+# NB: sqlalchemy-utils 0.42.1 (latest) is incompatible with sqlalchemy >= 2.1
+# (uses the removed sqlalchemy.orm.attributes.ScalarAttributeImpl),
+# so cap sqlalchemy until sqlalchemy-utils supports 2.1.
 test = [
     "pytest",
     "psycopg2-binary",
-    "sqlalchemy>=2",
+    "sqlalchemy>=2,<2.1",
     "sqlalchemy-utils"
 ]
 
@@ -31,6 +34,9 @@ include = ["pgembed*", "pgembed_pg*"]  # package names should match these glob p
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "no_server_required: test runs without built PostgreSQL binaries (lightweight CI)",
+]
 
 [tool.cibuildwheel]
 test-extras = "test"

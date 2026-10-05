@@ -12,7 +12,6 @@ from pgembed.utils import find_suitable_port, process_is_running
 import psutil
 import platform
 import sqlalchemy as sa
-import datetime
 from sqlalchemy_utils import database_exists, create_database
 import logging
 import os
@@ -88,6 +87,7 @@ def _kill_server(pid : Union[int,psutil.Process,None]) -> None:
         if proc.is_running():
             proc.kill()
 
+@pytest.mark.no_server_required
 def test_get_port():
     address = '127.0.0.1'
     port = find_suitable_port(address)
