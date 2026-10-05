@@ -56,6 +56,9 @@ jobs:
     timeout-minutes: 300
     env:
       PG_MAJOR: ${{ inputs.pg_major || '18' }}
+      # Must match the pgrx version pinned by the pgrx-based extensions
+      # (pgvectorscale, pg_search); 0.16.1 supports Postgres 18.
+      CARGO_PGRX_VERSION: "0.16.1"
       # Route all C/C++ compilation (postgres, pgvector, pg_duckdb, ...) through ccache.
       CC: ccache gcc
       CXX: ccache g++
@@ -82,9 +85,7 @@ jobs:
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Install cargo-pgrx
-        # Latest release, since the pinned 0.16.1 in build-and-test.yml
-        # predates Postgres 18 support.
-        run: cargo install cargo-pgrx --locked
+        run: cargo install cargo-pgrx --version "$CARGO_PGRX_VERSION" --locked
 
       - name: Restore ccache
         uses: actions/cache@v4
