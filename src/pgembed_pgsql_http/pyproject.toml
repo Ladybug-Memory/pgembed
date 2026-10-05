@@ -13,7 +13,7 @@ test = ["pytest"]
 where = ["."]
 include = ["pgembed_pgsql_http"]
 
-# The prebuilt extension binaries are staged next to __init__.py by CI
+# The prebuilt extension binaries are staged into build-pgembed-http/ by CI
 # (see .github/workflows/publish-pgembed-http.yml) before building.
 [tool.setuptools.package-data]
 pgembed_pgsql_http = ["http.so", "http.control", "http--*.sql"]
