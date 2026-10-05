@@ -112,21 +112,30 @@ jobs:
           # extension set differs.
           make EXTENSIONS=pgsql_http
 
-      - name: Stage binaries into the split package
+      - name: Stage split-wheel build tree
         shell: bash
         run: |
+          # The repo keeps the flat shim layout (like pgembed_pgvector) so the
+          # root install keeps working; the wheel needs a real package dir, so
+          # assemble it in a staging tree and build there.
+          rm -rf build-pgembed-http
+          mkdir -p build-pgembed-http/pgembed_pgsql_http
+          cp src/pgembed_pgsql_http/pyproject.toml \
+             src/pgembed_pgsql_http/setup.py \
+             src/pgembed_pgsql_http/README.md build-pgembed-http/
+          cp src/pgembed_pgsql_http/__init__.py build-pgembed-http/pgembed_pgsql_http/
           BIN=src/pgembed/pginstall/bin
           LIB="$("$BIN/pg_config" --pkglibdir)"
           SHARE="$("$BIN/pg_config" --sharedir)/postgresql/extension"
           ls "$LIB"/http.so "$SHARE"/http.control "$SHARE"/http--*.sql
-          cp "$LIB"/http.so src/pgembed_pgsql_http/pgembed_pgsql_http/
-          cp "$SHARE"/http.control "$SHARE"/http--*.sql src/pgembed_pgsql_http/pgembed_pgsql_http/
-          ls -la src/pgembed_pgsql_http/pgembed_pgsql_http/
+          cp "$LIB"/http.so build-pgembed-http/pgembed_pgsql_http/
+          cp "$SHARE"/http.control "$SHARE"/http--*.sql build-pgembed-http/pgembed_pgsql_http/
+          ls -la build-pgembed-http/pgembed_pgsql_http/
 
       - name: Build wheel
         run: |
           python -m pip install --upgrade pip build
-          cd src/pgembed_pgsql_http
+          cd build-pgembed-http
           python -m build
           ls dist/
           # setup.py forces a platform tag; a py3-none-any wheel here would
@@ -139,7 +148,7 @@ jobs:
       - name: Smoke test (CREATE EXTENSION http)
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "psycopg2-binary" "src/pgembed_pgsql_http/dist/"*.whl
+          python -m pip install "psycopg2-binary" "build-pgembed-http/dist/"*.whl
           python -m pip install pgembed
           python - <<'EOF'
           import tempfile
@@ -154,7 +163,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          path: src/pgembed_pgsql_http/dist/*
+          path: build-pgembed-http/dist/*
           name: pgembed-http-${{ matrix.os }}-${{ matrix.arch }}
           overwrite: true
 
