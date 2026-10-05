@@ -20,8 +20,6 @@ POSTGRES_BIN_PATH = _pkg_path / "pginstall" / "bin"
 _postgres_binaries_available = POSTGRES_BIN_PATH.exists()
 
 if not _postgres_binaries_available:
-    import os
-
     _logger = logging.getLogger("pgembed")
     _logger.warning(
         f"PostgreSQL binaries not found at {POSTGRES_BIN_PATH}. "

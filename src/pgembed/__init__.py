@@ -1,9 +1,18 @@
-from ._commands import *
+from ._commands import *  # noqa: F403
 from .postgres_server import PostgresServer, get_server
 from pathlib import Path
 from typing import Optional
 import logging
 import importlib.util
+
+__all__ = [
+    "PostgresServer",
+    "get_server",
+    "has_extension",
+    "list_extensions",
+    "get_extension_create_name",
+    "get_extension_path",
+]
 
 _logger = logging.getLogger("pgembed")
 

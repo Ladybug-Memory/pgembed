@@ -1,5 +1,4 @@
 from pathlib import Path
-import typing
 from typing import Optional, List, Dict
 import subprocess
 import json
@@ -10,7 +9,6 @@ import platform
 import stat
 import psutil
 import datetime
-import shutil
 
 _logger = logging.getLogger("pgembed")
 
@@ -142,14 +140,13 @@ def process_is_running(pid: int) -> bool:
 
 
 if platform.system() != "Windows":
+    import pwd
 
     def ensure_user_exists(username: str) -> Optional["pwd.struct_passwd"]:
         """Ensure system user `username` exists.
         Returns their pwentry if user exists, otherwise it creates a user through `useradd`.
         Assume permissions to add users, eg run as root.
         """
-        import pwd
-
         try:
             entry = pwd.getpwnam(username)
         except KeyError:
