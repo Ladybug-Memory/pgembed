@@ -35,14 +35,14 @@ def get_extension_share_path():
         base_share = (
             Path(__file__).parent / "pginstall" / "share" / "postgresql" / "extension"
         )
-        control_file = base_share / f"{EXTENSION_NAME}.control"
+        control_file = base_share / f"{EXTENSION_CREATE}.control"
         if control_file.exists():
             return base_share
 
         base_share = (
             pgembed.EXTENSION_LIB_PATH.parent / "share" / "postgresql" / "extension"
         )
-        control_file = base_share / f"{EXTENSION_NAME}.control"
+        control_file = base_share / f"{EXTENSION_CREATE}.control"
         if control_file.exists():
             return base_share
     except ImportError:

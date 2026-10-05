@@ -331,6 +331,7 @@ class PostgresServer:
             "pg_textsearch": "pgtextsearch",
             "pg_search": "pg_search",
             "pg_duckdb": "pg_duckdb",
+            "http": "pgsql_http",
         }
 
         pkg_name = extension_map.get(extension_name, extension_name)
