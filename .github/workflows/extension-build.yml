@@ -1,0 +1,145 @@
+# Verifies that postgres and its extensions build on one reference config
+# (currently: Python 3.14, Postgres 18, ubuntu x86_64).
+#
+# This exists for PRs that bump an extension version in pgbuild/Makefile
+# (e.g. a new pgvector/pg_duckdb/pg_search release): the full
+# multi-platform wheel matrix in build-and-test.yml is too heavy for
+# that, so this job builds everything once and then runs the test suite
+# against the freshly built binaries.
+#
+# It also runs on demand via workflow_dispatch, where pg_major,
+# python_version and extensions can be overridden to trial a version
+# bump before sending a PR.
+name: Extension build check
+
+on:
+  pull_request:
+    paths:
+      - "pgbuild/**"
+      - "Makefile"
+      - ".github/workflows/extension-build.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "pgbuild/**"
+      - "Makefile"
+      - ".github/workflows/extension-build.yml"
+  workflow_dispatch:
+    inputs:
+      pg_major:
+        description: "Postgres major version to build"
+        required: false
+        default: "18"
+      python_version:
+        description: "Python version for the test run"
+        required: false
+        default: "3.14"
+      extensions:
+        description: "Space-separated extensions to build (empty = Makefile defaults)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build PG${{ inputs.pg_major || '18' }} + extensions (py${{ inputs.python_version || '3.14' }})
+    runs-on: ubuntu-latest
+    # Full from-scratch build (notably pg_duckdb static) can take a while;
+    # ccache + cargo caches below make repeat runs much faster.
+    timeout-minutes: 300
+    env:
+      PG_MAJOR: ${{ inputs.pg_major || '18' }}
+      # Must match the pgrx version pinned by the pgrx-based extensions
+      # (pgvectorscale, pg_search); 0.16.1 supports Postgres 18.
+      CARGO_PGRX_VERSION: "0.16.1"
+      # Route all C/C++ compilation (postgres, pgvector, pg_duckdb, ...) through ccache.
+      CC: ccache gcc
+      CXX: ccache g++
+      CCACHE_DIR: ${{ github.workspace }}/../.ccache
+      CCACHE_MAXSIZE: 5G
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python_version || '3.14' }}
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          # NB: noble has no clang-dev/llvm-dev metapackages; libclang-dev provides
+          # the libclang that bindgen (via cargo-pgrx) needs.
+          sudo apt-get install -y ccache bison flex gcc libssl-dev clang libclang-dev pkg-config \
+            cmake ninja-build liblz4-dev libcurl4-openssl-dev libglib2.0-dev libffi-dev jq
+
+      - name: Install Rust toolchain
+        run: |
+          rustup update stable
+          rustup default stable
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      - name: Install cargo-pgrx
+        run: cargo install cargo-pgrx --version "$CARGO_PGRX_VERSION" --locked
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/../.ccache
+          key: ccache-pg${{ inputs.pg_major || '18' }}-linux-x86_64-${{ hashFiles('pgbuild/Makefile', '.github/workflows/extension-build.yml') }}
+          restore-keys: |
+            ccache-pg${{ inputs.pg_major || '18' }}-linux-x86_64-
+
+      - name: Restore cargo downloads
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: cargo-linux-x86_64-${{ hashFiles('pgbuild/Makefile', '.github/workflows/extension-build.yml') }}
+          restore-keys: |
+            cargo-linux-x86_64-
+
+      - name: Reset ccache stats
+        run: ccache --zero-stats
+
+      - name: Build postgres and extensions
+        env:
+          # Mirror build-and-test.yml on x86_64 linux.
+          RUSTFLAGS: "-C target-feature=+avx2,+fma"
+          EXTENSIONS_INPUT: ${{ inputs.extensions }}
+        run: |
+          args=(PG_MAJOR="$PG_MAJOR")
+          if [ -n "$EXTENSIONS_INPUT" ]; then args+=("EXTENSIONS=$EXTENSIONS_INPUT"); fi
+          make "${args[@]}"
+
+      - name: Build pg_search
+        # Built separately in build-and-test.yml too (not in the default set).
+        if: ${{ inputs.extensions == '' }}
+        env:
+          RUSTFLAGS: "-C target-feature=+avx2,+fma"
+        run: make PG_MAJOR="$PG_MAJOR" EXTENSIONS=pg_search
+
+      - name: Show ccache stats
+        if: always()
+        run: ccache --show-stats
+
+      - name: Verify build output
+        run: |
+          BIN=src/pgembed/pginstall/bin
+          "$BIN/postgres" --version
+          "$BIN/pg_config" --version
+          ls -la src/pgembed/pginstall/lib/*.so
+
+      - name: Install package with test extras
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[test]"
+
+      - name: Run test suite against freshly built binaries
+        run: python -m pytest tests/ -q

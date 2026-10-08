@@ -1,0 +1,62 @@
+# Lightweight CI for pull requests (and pushes to main).
+#
+# The full multi-platform wheel build + test suite lives in
+# build-and-test.yml and is too heavy to run on every PR, so this
+# workflow gives fast feedback instead:
+#   - lint: ruff check over the whole repo
+#   - test: install the package with test extras and run pytest.
+#     Tests that need a running PostgreSQL server (bundled binaries
+#     built via `make`, see tests/conftest.py) are skipped here; they
+#     still run in build-and-test.yml where the binaries exist.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install ruff
+        run: python -m pip install "ruff==0.9.5"
+      - name: Ruff check
+        run: ruff check .
+      - name: Compile check
+        run: python -m compileall -q src tests
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package with test extras
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[test]"
+      - name: Smoke import
+        run: python -c "import pgembed; print(pgembed.list_extensions())"
+      - name: Run tests
+        run: python -m pytest tests/ -v

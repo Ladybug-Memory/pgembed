@@ -2,10 +2,7 @@ import tempfile
 import pgembed
 import sqlalchemy as sa
 from sqlalchemy_utils import database_exists, create_database
-import os
 from pathlib import Path
-import subprocess
-import time
 import glob
 import duckdb
 
@@ -55,10 +52,10 @@ def patched_ensure_pgdata_inited(self):
     # Only add if not already present
     if "pg_duckdb" not in config:
         with open(conf_file, "a") as f:
-            f.write(f"\n# pg_duckdb configuration\n")
-            f.write(f"shared_preload_libraries = 'pg_duckdb'\n")
+            f.write("\n# pg_duckdb configuration\n")
+            f.write("shared_preload_libraries = 'pg_duckdb'\n")
             f.write(f"dynamic_library_path = '{pg_duckdb_lib}'\n")
-        print(f"✓ Configured pg_duckdb in postgresql.conf")
+        print("✓ Configured pg_duckdb in postgresql.conf")
 
 
 # Apply the patch
@@ -491,7 +488,7 @@ with tempfile.TemporaryDirectory() as tmpdir:
             dbname = parsed.path.lstrip("/").split("?")[0] or database_name
             socket_path = str(pg.pgdata)
 
-            print(f"  Connecting to PostgreSQL via Unix socket...")
+            print("  Connecting to PostgreSQL via Unix socket...")
 
             # Attach PostgreSQL using Unix socket
             duckdb_conn.execute(

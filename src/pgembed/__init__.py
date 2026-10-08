@@ -1,9 +1,18 @@
-from ._commands import *
+from ._commands import *  # noqa: F403
 from .postgres_server import PostgresServer, get_server
 from pathlib import Path
 from typing import Optional
 import logging
 import importlib.util
+
+__all__ = [
+    "PostgresServer",
+    "get_server",
+    "has_extension",
+    "list_extensions",
+    "get_extension_create_name",
+    "get_extension_path",
+]
 
 _logger = logging.getLogger("pgembed")
 
@@ -24,6 +33,7 @@ EXTENSION_PACKAGES = {
     "pgvector": "pgembed_pgvector",
     "pgvectorscale": "pgembed_pgvectorscale",
     "pgtextsearch": "pgembed_pgtextsearch",
+    "pgsql_http": "pgembed_pgsql_http"
 }
 
 EXTENSION_SO_FILES = {
@@ -32,6 +42,7 @@ EXTENSION_SO_FILES = {
     "pgtextsearch": "pg_textsearch.so",
     "pg_search": "pg_search.so",
     "pg_duckdb": "pg_duckdb.so",
+    "pgsql_http": "http.so",
 }
 
 EXTENSION_NAMES = (
@@ -40,6 +51,7 @@ EXTENSION_NAMES = (
     "pgtextsearch",
     "pg_search",
     "pg_duckdb",
+    "pgsql_http"
 )
 
 
@@ -106,6 +118,7 @@ def get_extension_create_name(name: str) -> str:
         "pgtextsearch": "pg_textsearch",
         "pg_search": "pg_search",
         "pg_duckdb": "pg_duckdb",
+        "pgsql_http": "http"
     }
     return create_names.get(name, name)
 

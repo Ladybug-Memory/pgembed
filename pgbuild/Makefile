@@ -41,16 +41,18 @@ EXTENSIONS := $(filter-out $(UNSUPPORTED_EXTENSIONS),$(REQUESTED_EXTENSIONS))
 .PHONY: all
 all: postgres $(EXTENSIONS)
 
-.PHONY: pgvector pgvectorscale pgtextsearch pg_search pg_duckdb
+.PHONY: pgvector pgvectorscale pgtextsearch pg_search pg_duckdb pgsql_http
 pgvector: postgres $(INSTALL_PREFIX)/lib/vector.so
 pgvectorscale: postgres $(INSTALL_PREFIX)/lib/vectorscale.so
 pgtextsearch: postgres $(INSTALL_PREFIX)/lib/pg_textsearch.so
 pg_search: postgres $(INSTALL_PREFIX)/lib/pg_search.so
 pg_duckdb: postgres $(INSTALL_PREFIX)/lib/pg_duckdb.so
+pgsql_http: postgres $(INSTALL_PREFIX)/lib/http.so
 
 ### postgres
-POSTGRES_VERSION := 17-stable
-POSTGRES_SRC := REL_17_STABLE
+# Major postgres version to build. Override from the command line or CI, e.g. `make PG_MAJOR=18`.
+PG_MAJOR ?= 17
+POSTGRES_SRC := REL_$(PG_MAJOR)_STABLE
 POSTGRES_BLD := $(POSTGRES_SRC)
 
 
@@ -97,6 +99,23 @@ $(INSTALL_PREFIX)/lib/vector.so: $(PGVECTOR_DIR)/Makefile $(INSTALL_PREFIX)/bin/
 		&& $(MAKE) -C $(PGVECTOR_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) -j \
 		&& $(MAKE) -C $(PGVECTOR_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) install
 
+### pgsql_http
+PGSQL_HTTP_TAG := v1.7.2
+PGSQL_HTTP_URL := https://github.com/pramsey/pgsql-http/archive/refs/tags/$(PGSQL_HTTP_TAG).tar.gz
+PGSQL_HTTP_DIR := pgsql-http-$(PGSQL_HTTP_TAG)
+
+$(PGSQL_HTTP_DIR).tar.gz:
+	curl -L -o $(PGSQL_HTTP_DIR).tar.gz $(PGSQL_HTTP_URL)
+
+$(PGSQL_HTTP_DIR)/Makefile: $(PGSQL_HTTP_DIR).tar.gz
+	mkdir -p $(PGSQL_HTTP_DIR)
+	tar xzf $(PGSQL_HTTP_DIR).tar.gz -C $(PGSQL_HTTP_DIR) --strip-components=1
+	touch $(PGSQL_HTTP_DIR)/Makefile
+
+$(INSTALL_PREFIX)/lib/http.so: $(PGSQL_HTTP_DIR)/Makefile $(INSTALL_PREFIX)/bin/postgres
+	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
+		&& $(MAKE) -C $(PGSQL_HTTP_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) -j \
+		&& $(MAKE) -C $(PGSQL_HTTP_DIR) PG_CONFIG=$(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) install
 ### pg_duckdb
 PG_DUCKDB_TAG := v1.1.1
 PG_DUCKDB_REPO := https://github.com/duckdb/pg_duckdb
@@ -133,8 +152,8 @@ ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
 	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
 		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
 		&& cd $(PGVECTORSCALE_DIR)/pgvectorscale \
-		&& cargo pgrx init --pg17 $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
-		&& cargo pgrx install --release
+		&& cargo pgrx init --pg$(PG_MAJOR) $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
+		&& cargo pgrx install --release --pg-config $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT)
 else ifeq ($(OS),Windows_NT)
 	$(error pgvectorscale build is not supported on Windows due to cargo-pgrx issues)
 else
@@ -184,8 +203,8 @@ ifeq ($(RUST_EXTENSIONS_SUPPORTED),1)
 	unset MAKELEVEL && unset MAKEFLAGS && unset MFLAGS \
 		&& export PATH="$$HOME/.cargo/bin:$$PATH" \
 		&& cd $(PGSEARCH_SUBDIR) \
-		&& cargo pgrx init --pg17 $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
-		&& cargo pgrx install --release
+		&& cargo pgrx init --pg$(PG_MAJOR) $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT) \
+		&& cargo pgrx install --release --pg-config $(INSTALL_PREFIX)/bin/pg_config$(EXE_EXT)
 else ifeq ($(OS),Windows_NT)
 	$(error pg_search build is not supported on Windows due to cargo-pgrx issues)
 else
@@ -203,6 +222,7 @@ clean:
 	rm -rf $(PG_DUCKDB_DIR)
 	rm -rf $(PGTEXTSEARCH_DIR)
 	rm -rf $(PGSEARCH_DIR)
+	rm -rf $(PGSQL_HTTP_DIR)
 
 clean-all: clean
 	rm -rf *.tar.gz
