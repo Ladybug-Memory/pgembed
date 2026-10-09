@@ -262,6 +262,11 @@ def test_pgsql_http(tmp_postgres):
     ret = tmp_postgres.create_extension("http")
     assert ret.strip() == "CREATE EXTENSION"
 
+def test_pgsql_http_run(tmp_postgres):
+    tmp_postgres.psql("CREATE EXTENSION http")
+    ret = tmp_postgres.psql("SELECT http_get('https://httpbin.org/get');")
+    assert 'url' in ret
+
 def test_start_failure_log(caplog):
     """ Test server log contents are shown in python log when failures
     """

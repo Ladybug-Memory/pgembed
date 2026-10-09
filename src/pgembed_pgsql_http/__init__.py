@@ -1,7 +1,7 @@
 __version__ = "0.1.8"
 
 EXTENSION_NAME = "pgsql_http"
-EXTENSION_SO = "http.so"
+EXTENSION_SO_FILES = ("http.so", "http.dylib")
 EXTENSION_CREATE = "http"
 
 
@@ -9,17 +9,19 @@ def get_extension_path():
     from pathlib import Path
 
     pkg_dir = Path(__file__).parent
-    so_path = pkg_dir / EXTENSION_SO
-    if so_path.exists():
-        return so_path
+    for filename in EXTENSION_SO_FILES:
+        so_path = pkg_dir / filename
+        if so_path.exists():
+            return so_path
 
     try:
         import pgembed
 
         base_lib = pgembed.EXTENSION_LIB_PATH
-        bundled = base_lib / "postgresql" / EXTENSION_SO
-        if bundled.exists():
-            return bundled
+        for filename in EXTENSION_SO_FILES:
+            bundled = base_lib / "postgresql" / filename
+            if bundled.exists():
+                return bundled
     except ImportError:
         pass
 
